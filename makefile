@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c -Wall
 LDFLAGS=
-SOURCES=main.c bitmap.c
+SOURCES=main.c imagelib.c
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=raytrace
 
