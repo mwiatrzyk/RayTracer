@@ -293,7 +293,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
                             for(k=0; k<8; k++) {
                                 if (x+k >= w)
                                     break;
-                                p = get_pixel(self, x+k, y);
+                                p = iml_bitmap_getpixel(self, x+k, y);
                                 p = (getr(p)+getg(p)+getb(p))/3;  //grayscale (0..255)
                                 p >>= 7;  //p>127 -> p=1, p<=127 -> p=0
                                 *(buffer+i) |= p<<(7-k);
@@ -332,9 +332,9 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
                     for(y=h-1; y>=0; y--) {
                         memset(buffer, 0, buf_size);
                         for(x=0, i=0; x<w; x+=2, i++) {
-                            p1 = get_pixel(self, x, y);
+                            p1 = iml_bitmap_getpixel(self, x, y);
                             if (x+1 < w) {
-                                p2 = get_pixel(self, x+1, y);
+                                p2 = iml_bitmap_getpixel(self, x+1, y);
                             } else {
                                 p2=0;
                             }
@@ -370,7 +370,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
                     for(y=h-1; y>=0; y--) {
                         memset(buffer, 0, buf_size);
                         for(x=0, i=0; x<w; x++, i++) {
-                            p = get_pixel(self, x, y);
+                            p = iml_bitmap_getpixel(self, x, y);
                             *(buffer+i) = (getr(p)>>5)<<5 | (getg(p)>>5)<<2 | getb(p)>>6;
                         }
                         fwrite(buffer, buf_size, 1, fd);
@@ -388,7 +388,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
             for(y=h-1; y>=0; y--) {
                 memset(buffer, 0, buf_size*sizeof(unsigned char));
                 for(x=0, i=0; x<w; x++, i+=2) {
-                    p = get_pixel(self, x, y);
+                    p = iml_bitmap_getpixel(self, x, y);
                     col16 = (getr(p)>>3)<<10 | (getg(p)>>3)<<5 | getb(p)>>3;
                     *(buffer+i+1) = (col16>>8)&0xff;
                     *(buffer+i) = col16&0xff;
@@ -407,7 +407,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
             for(y=h-1; y>=0; y--) {
                 memset(buffer, 0, buf_size*sizeof(unsigned char));
                 for(x=0, i=0; x<w; x++, i+=bpp==24? 3: 4) {
-                    p = get_pixel(self, x, y);
+                    p = iml_bitmap_getpixel(self, x, y);
                     *(buffer+i) = getb(p);
                     *(buffer+i+1) = getg(p);
                     *(buffer+i+2) = getr(p);

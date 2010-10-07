@@ -77,7 +77,7 @@ inline void iml_bitmap_setpixel(IML_Bitmap* self, int32_t x, int32_t y, uint32_t
  @param: self: pointer to bitmap
  @param: x: x coordinate of pixel
  @param: y: y coordinate of pixel */
-inline uint32_t get_pixel(const IML_Bitmap* self, int32_t x, int32_t y) {
+inline uint32_t iml_bitmap_getpixel(const IML_Bitmap* self, int32_t x, int32_t y) {
     return *(self->pixels+(y*self->width)+x);
 }
 
