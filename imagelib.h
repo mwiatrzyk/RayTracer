@@ -5,7 +5,7 @@
 
 //// GLOBALS //////////////////////////////////////////////////
 
-extern uint32_t il_error;
+extern uint32_t iml_error;
 
 //// ENUMERATIONS /////////////////////////////////////////////
 
@@ -127,16 +127,16 @@ inline uint32_t geta(uint32_t color) {
  @param: width: bitmap width
  @param: height: bitmap height 
  @param: background: bitmap background */
-IML_Bitmap* il_create_bitmap(int32_t width, int32_t height, uint32_t background);
+IML_Bitmap* iml_create_bitmap(int32_t width, int32_t height, uint32_t background);
 
 /* Releases memory occupied by given IML_Bitmap object. */
-void il_destroy_bitmap(IML_Bitmap* self);
+void iml_destroy_bitmap(IML_Bitmap* self);
 
 /* Loads bitmap image from given file and returns it as buffer of bytes. Bitmap
  * is decoded to RGBA format used by IML_Bitmap object.
  
  @param: filename: path to image file */
-IML_Bitmap* il_load(const char* filename);
+IML_Bitmap* iml_load(const char* filename);
 
 /* Saves given IML_Bitmap object into specified BMP file with specified bit
  * count. 
@@ -144,6 +144,6 @@ IML_Bitmap* il_load(const char* filename);
  @param: self: pointer to IML_Bitmap object
  @param: filename: pointer to file name where bitmap will be stored
  @param: bpp: bit count (1, 4, 8, 16, 24 or 32) */
-void il_save(const IML_Bitmap* self, const char* filename, uint16_t bpp);
+void iml_save(const IML_Bitmap* self, const char* filename, uint16_t bpp);
 
 #endif

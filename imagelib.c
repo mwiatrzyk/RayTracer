@@ -5,10 +5,10 @@
 #include <math.h>
 
 
-uint32_t il_error = 0;
+uint32_t iml_error = 0;
 
 
-IML_Bitmap* il_create_bitmap(int32_t width, int32_t height, uint32_t background) {
+IML_Bitmap* iml_create_bitmap(int32_t width, int32_t height, uint32_t background) {
     IML_Bitmap* res = malloc(sizeof(IML_Bitmap));
     if(!res) {
         return NULL;  // allocation failed
@@ -25,13 +25,13 @@ IML_Bitmap* il_create_bitmap(int32_t width, int32_t height, uint32_t background)
 }
 
 
-void il_destroy_bitmap(IML_Bitmap* self) {
+void iml_destroy_bitmap(IML_Bitmap* self) {
     free(self->pixels);
     free(self);
 }
 
 
-IML_Bitmap* il_load(const char* filename) {
+IML_Bitmap* iml_load(const char* filename) {
     IML_BmpHeader hdr;
     IML_DibType dib_type;
 
@@ -40,7 +40,7 @@ IML_Bitmap* il_load(const char* filename) {
     //open file
     FILE *fd = fopen(filename, "rb");
     if (!fd) {
-        il_error = IML_IO_ERROR;  //unable to read from file
+        iml_error = IML_IO_ERROR;  //unable to read from file
         return NULL;
     }
 
@@ -51,7 +51,7 @@ IML_Bitmap* il_load(const char* filename) {
     fread(&hdr.bfReserved2, sizeof(hdr.bfReserved2), 1, fd);
     fread(&hdr.bfOffBits, sizeof(hdr.bfOffBits), 1, fd);
     if (hdr.bfType[0] != 'B' || hdr.bfType[1] != 'M') {
-        il_error = IML_INVALID_FILE_FORMAT;  //BM signature check failed
+        iml_error = IML_INVALID_FILE_FORMAT;  //BM signature check failed
         return NULL;
     }
 
@@ -71,7 +71,7 @@ IML_Bitmap* il_load(const char* filename) {
         fread(&hdr.biClrRotation, sizeof(hdr.biClrRotation), 1, fd);
         fread(&hdr.biReserved, sizeof(hdr.biReserved), 1, fd);
         if (hdr.biCompression != 0) {
-            il_error = IML_FORMAT_NOT_SUPPORTED;
+            iml_error = IML_FORMAT_NOT_SUPPORTED;
             return NULL;
         }
         dib_type = DIB_WIN_V3;
@@ -80,9 +80,9 @@ IML_Bitmap* il_load(const char* filename) {
     }
     
     //create result bitmap
-    IML_Bitmap* res = il_create_bitmap(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, rgba(0,0,0,0));
+    IML_Bitmap* res = iml_create_bitmap(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, rgba(0,0,0,0));
     if (!res) {
-        il_error = IML_NOT_ENOUGH_MEMORY;
+        iml_error = IML_NOT_ENOUGH_MEMORY;
         return NULL;
     }
 
@@ -90,7 +90,7 @@ IML_Bitmap* il_load(const char* filename) {
     uint32_t buf_size = (uint32_t)(4*ceil(hdr.biBitCount*hdr.biWidth/32.0));
     unsigned char *buffer = malloc(buf_size*sizeof(unsigned char)); 
     if (!buffer) {
-        il_error = IML_NOT_ENOUGH_MEMORY;
+        iml_error = IML_NOT_ENOUGH_MEMORY;
         return NULL;
     }
 
@@ -103,7 +103,7 @@ IML_Bitmap* il_load(const char* filename) {
             uint32_t pal_size = hdr.biClrUsed!=0 ? hdr.biClrUsed : (dib_type==DIB_OS2_V1 ? 3 : 4)*(uint32_t)pow(2.0f, hdr.biBitCount);
             unsigned char *palette = malloc(pal_size*sizeof(unsigned char));
             if (!palette) {
-                il_error = IML_NOT_ENOUGH_MEMORY;
+                iml_error = IML_NOT_ENOUGH_MEMORY;
                 return NULL;
             }
             
@@ -219,7 +219,7 @@ IML_Bitmap* il_load(const char* filename) {
 }
 
 
-void il_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
+void iml_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
     IML_BmpHeader hdr;
     uint32_t palette_size=4*(uint32_t)pow(2.0f, bpp);
 
@@ -227,14 +227,14 @@ void il_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
 
     //validate bpp parameter
     if (bpp!=1 && bpp!=4 && bpp!=8 && bpp!=16 && bpp!=24 && bpp!=32) {
-        il_error = IML_INVALID_BPP;
+        iml_error = IML_INVALID_BPP;
         return;
     }
     
     //open file for binary write mode
     FILE *fd=fopen(filename, "wb");
     if (!fd) {
-        il_error = IML_IO_ERROR;  //unable to read from file
+        iml_error = IML_IO_ERROR;  //unable to read from file
         return;
     }
 
@@ -257,7 +257,7 @@ void il_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
     uint32_t buf_size=(uint32_t)(4*ceil(bpp*self->width/32.0));
     unsigned char *buffer=malloc(buf_size*sizeof(unsigned char));
     if(!buffer) {
-        il_error = IML_NOT_ENOUGH_MEMORY;
+        iml_error = IML_NOT_ENOUGH_MEMORY;
         return;
     }
 
@@ -268,7 +268,7 @@ void il_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
             //create palette buffer
             unsigned char *palette=malloc(palette_size*sizeof(unsigned char));
             if (!palette) {
-                il_error = IML_NOT_ENOUGH_MEMORY;
+                iml_error = IML_NOT_ENOUGH_MEMORY;
                 return;
             }          
 
