@@ -8,6 +8,41 @@
 uint32_t iml_errno = 0;
 
 
+inline void iml_bitmap_setpixel(IML_Bitmap* self, int32_t x, int32_t y, uint32_t color) {
+    *(self->pixels+(y*self->width)+x) = color;
+}
+
+
+inline uint32_t iml_bitmap_getpixel(const IML_Bitmap* self, int32_t x, int32_t y) {
+    return *(self->pixels+(y*self->width)+x);
+}
+
+
+inline uint32_t iml_rgba(uint32_t r, uint32_t g, uint32_t b, uint32_t a) {
+    return ((r&0xff)<<24) | ((g&0xff)<<16) | ((b&0xff)<<8) | (a&0xff);
+}
+
+
+inline uint32_t iml_getr(uint32_t color) {
+    return (color>>24)&0xff;
+}
+
+
+inline uint32_t iml_getg(uint32_t color) {
+    return (color>>16)&0xff;
+}
+
+
+inline uint32_t iml_getb(uint32_t color) {
+    return (color>>8)&0xff;
+}
+
+
+inline uint32_t iml_geta(uint32_t color) {
+    return color&0xff;
+}
+
+
 int iml_error(void) {
     return iml_errno;
 }
