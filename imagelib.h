@@ -94,7 +94,8 @@ IL_Bitmap* il_create_bitmap(int32_t width, int32_t height, uint32_t background);
 /* Releases memory occupied by given IL_Bitmap object. */
 void il_destroy_bitmap(IL_Bitmap* self);
 
-/* Loads bitmap image from given file and returns it as buffer of bytes.
+/* Loads bitmap image from given file and returns it as buffer of bytes. Bitmap
+ * is decoded to RGBA format used by IL_Bitmap object.
  
  @param: filename: path to image file */
 IL_Bitmap* il_load(const char* filename);
