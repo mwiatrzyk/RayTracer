@@ -220,5 +220,203 @@ IL_Bitmap* il_load(const char* filename) {
 
 
 void il_save(const IL_Bitmap* self, const char* filename, uint16_t bpp) {
+    IL_BmpHeader hdr;
+    uint32_t palette_size=4*(uint32_t)pow(2.0f, bpp);
+
+    memset(&hdr, 0, sizeof(hdr));
+
+    //validate bpp parameter
+    if (bpp!=1 && bpp!=4 && bpp!=8 && bpp!=16 && bpp!=24 && bpp!=32) {
+        il_error = IL_INVALID_BPP;
+        return;
+    }
     
+    //open file for binary write mode
+    FILE *fd=fopen(filename, "wb");
+    if (!fd) {
+        il_error = IL_IO_ERROR;  //unable to read from file
+        return;
+    }
+
+    //prepare header
+    hdr.bfType[0] = 'B';
+    hdr.bfType[1] = 'M';
+    hdr.bfSize = (uint32_t)(54+4*ceil(bpp*self->width/32.0)*self->height+palette_size);
+    hdr.bfOffBits = 54+palette_size;
+    hdr.biSize = 40;
+    hdr.biWidth = self->width;
+    hdr.biHeight = self->height;
+    hdr.biPlanes = 1;
+    hdr.biBitCount = bpp;
+    hdr.biSizeImage = hdr.bfSize-54-palette_size;
+
+    //write header to file
+    fwrite(&hdr, sizeof(hdr), 1, fd);
+
+    //create scanline buffer
+    uint32_t buf_size=(uint32_t)(4*ceil(bpp*self->width/32.0));
+    unsigned char *buffer=malloc(buf_size*sizeof(unsigned char));
+    if(!buffer) {
+        il_error = IL_NOT_ENOUGH_MEMORY;
+        return;
+    }
+
+    switch(bpp) {
+        case 1:
+        case 4:
+        case 8: {
+            //create palette buffer
+            unsigned char *palette=malloc(palette_size*sizeof(unsigned char));
+            if (!palette) {
+                il_error = IL_NOT_ENOUGH_MEMORY;
+                return;
+            }          
+
+            switch(bpp) {
+                case 1: {
+                    int32_t x, y, w=self->width, h=self->height;
+                    uint32_t p, i;
+                    uint16_t k;
+
+                    //create palette containing two colors - black and white
+                    palette[0] = palette[1] = palette[2] = 0;
+                    palette[3] = 0;
+                    palette[4] = palette[5] = palette[6] = 255;
+                    palette[7] = 0;
+
+                    //write palette to file
+                    fwrite(palette, palette_size, 1, fd);
+
+                    for(y=h-1; y>=0; y--) {
+                        memset(buffer, 0, buf_size);
+                        for(x=0, i=0; x<w; x+=8, i++) {
+                            for(k=0; k<8; k++) {
+                                if (x+k >= w)
+                                    break;
+                                p = get_pixel(self, x+k, y);
+                                p = (getr(p)+getg(p)+getb(p))/3;  //grayscale (0..255)
+                                p >>= 7;  //p>127 -> p=1, p<=127 -> p=0
+                                *(buffer+i) |= p<<(7-k);
+                            }
+                        }
+                        //write image data scanline to file
+                        fwrite(buffer, buf_size, 1, fd);
+                    }
+                    break;
+                }
+
+                case 4: {
+                    int32_t x, y, w=self->width, h=self->height;
+                    uint32_t i, j, p1, p2;
+
+                    /* create palette. The idea behind is that we treat each
+                     * 0..16 number as RGB color, where 1 bit is used for R
+                     * component, 2 bits for G component and 1 bit for B
+                     * component. After splitting each number, each bits are
+                     * scaled to 0..255 range by shifting left to oldest
+                     * possible bit positions */
+                    for(j=0, i=0; j<15; j++, i+=4) {
+                        *(palette+i)=(j&1)<<7;
+                        *(palette+i+1)=((j>>1)&3)<<6;
+                        *(palette+i+2)=((j>>3)&1)<<7;
+                        *(palette+i+3)=0;
+                    }
+
+                    //add white color to palette
+                    palette[i]=palette[i+1]=palette[i+2]=255;
+                    palette[i+3]=0;
+
+                    //save palette to file
+                    fwrite(palette, palette_size, 1, fd);
+
+                    for(y=h-1; y>=0; y--) {
+                        memset(buffer, 0, buf_size);
+                        for(x=0, i=0; x<w; x+=2, i++) {
+                            p1 = get_pixel(self, x, y);
+                            if (x+1 < w) {
+                                p2 = get_pixel(self, x+1, y);
+                            } else {
+                                p2=0;
+                            }
+                            *(buffer+i) = (getr(p1)>>7)<<7 | (getg(p1)>>6)<<5 | (getb(p1)>>7)<<4 | 
+                                          (getr(p2)>>7)<<3 | (getg(p2)>>6)<<1 | getb(p2)>>7;
+                        }
+                        fwrite(buffer, buf_size, 1, fd);
+                    }
+                    break;
+                }
+
+                case 8: {
+                    int32_t x, y, w=self->width, h=self->height;
+                    uint32_t i, j, p;
+
+                    /* create palette. Idea is the same as for 4bit color.
+                     * However, since we have more bits we can assign 3 bits
+                     * for "red" and "green" and 2 bits for "blue" */
+                    for(j=0, i=0; j<255; j++, i+=4) {
+                        *(palette+i)=(j&3)<<6;
+                        *(palette+i+1)=((j>>2)&7)<<5;
+                        *(palette+i+2)=((j>>5)&7)<<5;
+                        *(palette+i+3)=0;
+                    }
+                    
+                    //add white color to palette
+                    palette[i]=palette[i+1]=palette[i+2]=255;
+                    palette[i+3]=0;
+
+                    //save palette to file
+                    fwrite(palette, palette_size, 1, fd);
+
+                    for(y=h-1; y>=0; y--) {
+                        memset(buffer, 0, buf_size);
+                        for(x=0, i=0; x<w; x++, i++) {
+                            p = get_pixel(self, x, y);
+                            *(buffer+i) = (getr(p)>>5)<<5 | (getg(p)>>5)<<2 | getb(p)>>6;
+                        }
+                        fwrite(buffer, buf_size, 1, fd);
+                    }
+                    break;
+                }
+            }
+        }
+
+        //16bit color (R -> 5 bits, G -> 5 bits, B -> 5 bits)
+        case 16: {
+            int32_t x, y, w=self->width, h=self->height;
+            uint32_t i, p, col16;
+
+            for(y=h-1; y>=0; y--) {
+                memset(buffer, 0, buf_size*sizeof(unsigned char));
+                for(x=0, i=0; x<w; x++, i+=2) {
+                    p = get_pixel(self, x, y);
+                    col16 = (getr(p)>>3)<<10 | (getg(p)>>3)<<5 | getb(p)>>3;
+                    *(buffer+i+1) = (col16>>8)&0xff;
+                    *(buffer+i) = col16&0xff;
+                }
+                fwrite(buffer, buf_size, 1, fd);
+            }
+            break;
+        }
+
+        //True color
+        case 24:
+        case 32: {
+            int32_t x, y, w=self->width, h=self->height;
+            uint32_t i, p;
+
+            for(y=h-1; y>=0; y--) {
+                memset(buffer, 0, buf_size*sizeof(unsigned char));
+                for(x=0, i=0; x<w; x++, i+=bpp==24? 3: 4) {
+                    p = get_pixel(self, x, y);
+                    *(buffer+i) = getb(p);
+                    *(buffer+i+1) = getg(p);
+                    *(buffer+i+2) = getr(p);
+                }
+                fwrite(buffer, buf_size, 1, fd);
+            }
+            break;
+        }
+    }
+    
+    fclose(fd);
 }

@@ -14,7 +14,8 @@ typedef enum _IL_Error {
     IL_IO_ERROR,             //unable to read from file
     IL_INVALID_FILE_FORMAT,  //trying to load file of invalid format
     IL_FORMAT_NOT_SUPPORTED, //image file format is not supported
-    IL_NOT_ENOUGH_MEMORY     //not enough memory to hold entire image 
+    IL_NOT_ENOUGH_MEMORY,    //not enough memory to hold entire image
+    IL_INVALID_BPP           //bits per pixel argument is invalid
 } IL_Error;
 
 /* Enumeration of DIB header types. */
@@ -71,6 +72,15 @@ inline void set_pixel(IL_Bitmap* self, int32_t x, int32_t y, uint32_t color) {
     *(self->pixels+(y*self->width)+x) = color;
 }
 
+/* Gets pixel value at given bitmap position without bound check.
+
+ @param: self: pointer to bitmap
+ @param: x: x coordinate of pixel
+ @param: y: y coordinate of pixel */
+inline uint32_t get_pixel(const IL_Bitmap* self, int32_t x, int32_t y) {
+    return *(self->pixels+(y*self->width)+x);
+}
+
 /* Builds singe 32bit value representing RGBA color using its components.
 
  @param: r: red component
@@ -79,6 +89,34 @@ inline void set_pixel(IL_Bitmap* self, int32_t x, int32_t y, uint32_t color) {
  @param: a: alpha component (actually not used - this value is ignored) */
 inline uint32_t rgba(uint32_t r, uint32_t g, uint32_t b, uint32_t a) {
     return ((r&0xff)<<24) | ((g&0xff)<<16) | ((b&0xff)<<8) | (a&0xff);
+}
+
+/* Returns "red" component value of given color. 
+
+ @param: color: RGBA color value */
+inline uint32_t getr(uint32_t color) {
+    return (color>>24)&0xff;
+}
+
+/* Returns "green" component value of given color. 
+
+ @param: color: RGBA color value */
+inline uint32_t getg(uint32_t color) {
+    return (color>>16)&0xff;
+}
+
+/* Returns "blue" component value of given color. 
+
+ @param: color: RGBA color value */
+inline uint32_t getb(uint32_t color) {
+    return (color>>8)&0xff;
+}
+
+/* Returns "alpha" component value of given color. 
+
+ @param: color: RGBA color value */
+inline uint32_t geta(uint32_t color) {
+    return color&0xff;
 }
 
 //// FUNCTIONS ////////////////////////////////////////////////
