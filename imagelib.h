@@ -94,28 +94,28 @@ inline uint32_t iml_rgba(uint32_t r, uint32_t g, uint32_t b, uint32_t a) {
 /* Returns "red" component value of given color. 
 
  @param: color: RGBA color value */
-inline uint32_t getr(uint32_t color) {
+inline uint32_t iml_getr(uint32_t color) {
     return (color>>24)&0xff;
 }
 
 /* Returns "green" component value of given color. 
 
  @param: color: RGBA color value */
-inline uint32_t getg(uint32_t color) {
+inline uint32_t iml_getg(uint32_t color) {
     return (color>>16)&0xff;
 }
 
 /* Returns "blue" component value of given color. 
 
  @param: color: RGBA color value */
-inline uint32_t getb(uint32_t color) {
+inline uint32_t iml_getb(uint32_t color) {
     return (color>>8)&0xff;
 }
 
 /* Returns "alpha" component value of given color. 
 
  @param: color: RGBA color value */
-inline uint32_t geta(uint32_t color) {
+inline uint32_t iml_geta(uint32_t color) {
     return color&0xff;
 }
 
