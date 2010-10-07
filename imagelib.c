@@ -62,6 +62,7 @@ char* iml_error_string(int errno) {
 
 
 IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background) {
+    uint32_t *p, *maxp;
     IML_Bitmap* res = malloc(sizeof(IML_Bitmap));
     if(!res) {
         return NULL;  // allocation failed
@@ -70,6 +71,11 @@ IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background
     res->height = height;
     res->background = background;
     res->pixels = malloc(width*height*sizeof(uint32_t));
+    p = res->pixels;
+    maxp = (uint32_t*)(p+width*height);
+    while(p < maxp) {
+        *(p++) = background;
+    }
     if(!res->pixels) {
         free(res);
         return NULL;  // allocation failed - free previously allocated bitmap and return
