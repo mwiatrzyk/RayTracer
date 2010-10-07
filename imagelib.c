@@ -310,7 +310,24 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
     hdr.biSizeImage = hdr.bfSize-54-palette_size;
 
     //write header to file
-    fwrite(&hdr, sizeof(hdr), 1, fd);
+    fwrite(&hdr.bfType, sizeof(hdr.bfType), 1, fd);
+    fwrite(&hdr.bfSize, sizeof(hdr.bfSize), 1, fd);
+    fwrite(&hdr.bfReserved1, sizeof(hdr.bfReserved1), 1, fd);
+    fwrite(&hdr.bfReserved2, sizeof(hdr.bfReserved2), 1, fd);
+    fwrite(&hdr.bfOffBits, sizeof(hdr.bfOffBits), 1, fd);
+    fwrite(&hdr.biSize, sizeof(hdr.biSize), 1, fd);
+    fwrite(&hdr.biWidth, sizeof(hdr.biWidth), 1, fd);
+    fwrite(&hdr.biHeight, sizeof(hdr.biHeight), 1, fd);
+    fwrite(&hdr.biPlanes, sizeof(hdr.biPlanes), 1, fd);
+    fwrite(&hdr.biBitCount, sizeof(hdr.biBitCount), 1, fd);
+    fwrite(&hdr.biCompression, sizeof(hdr.biCompression), 1, fd);
+    fwrite(&hdr.biSizeImage, sizeof(hdr.biSizeImage), 1, fd);
+    fwrite(&hdr.biXPelsPerMeter, sizeof(hdr.biXPelsPerMeter), 1, fd);
+    fwrite(&hdr.biYPelsPerMeter, sizeof(hdr.biYPelsPerMeter), 1, fd);
+    fwrite(&hdr.biClrUsed, sizeof(hdr.biClrUsed), 1, fd);
+    fwrite(&hdr.biClrImportant, sizeof(hdr.biClrImportant), 1, fd);
+    fwrite(&hdr.biClrRotation, sizeof(hdr.biClrRotation), 1, fd);
+    fwrite(&hdr.biReserved, sizeof(hdr.biReserved), 1, fd);
 
     //create scanline buffer
     uint32_t buf_size=(uint32_t)(4*ceil(bpp*self->width/32.0));
