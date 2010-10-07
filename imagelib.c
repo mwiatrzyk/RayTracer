@@ -8,7 +8,7 @@
 uint32_t iml_error = 0;
 
 
-IML_Bitmap* iml_create_bitmap(int32_t width, int32_t height, uint32_t background) {
+IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background) {
     IML_Bitmap* res = malloc(sizeof(IML_Bitmap));
     if(!res) {
         return NULL;  // allocation failed
@@ -80,7 +80,7 @@ IML_Bitmap* iml_load(const char* filename) {
     }
     
     //create result bitmap
-    IML_Bitmap* res = iml_create_bitmap(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, rgba(0,0,0,0));
+    IML_Bitmap* res = iml_bitmap_create(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, rgba(0,0,0,0));
     if (!res) {
         iml_error = IML_NOT_ENOUGH_MEMORY;
         return NULL;

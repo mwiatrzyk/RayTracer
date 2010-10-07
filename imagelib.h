@@ -127,7 +127,7 @@ inline uint32_t geta(uint32_t color) {
  @param: width: bitmap width
  @param: height: bitmap height 
  @param: background: bitmap background */
-IML_Bitmap* iml_create_bitmap(int32_t width, int32_t height, uint32_t background);
+IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background);
 
 /* Releases memory occupied by given IML_Bitmap object. */
 void iml_destroy_bitmap(IML_Bitmap* self);
