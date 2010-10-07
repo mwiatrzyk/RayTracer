@@ -144,6 +144,6 @@ IML_Bitmap* iml_bitmap_load(const char* filename);
  @param: self: pointer to IML_Bitmap object
  @param: filename: pointer to file name where bitmap will be stored
  @param: bpp: bit count (1, 4, 8, 16, 24 or 32) */
-void iml_save(const IML_Bitmap* self, const char* filename, uint16_t bpp);
+void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp);
 
 #endif

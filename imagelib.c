@@ -219,7 +219,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
 }
 
 
-void iml_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
+void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
     IML_BmpHeader hdr;
     uint32_t palette_size=4*(uint32_t)pow(2.0f, bpp);
 
