@@ -126,7 +126,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
                                 if (x+k >= w)
                                     break;
                                 ptr = palette+(dib_type==DIB_OS2_V1 ? ((p>>(7-k))&1)*3 : ((p>>(7-k))&1)<<2);
-                                set_pixel(res, x+k, y, rgba(*(ptr+2), *(ptr+1), *(ptr), 0));
+                                iml_bitmap_setpixel(res, x+k, y, rgba(*(ptr+2), *(ptr+1), *(ptr), 0));
                             }
                         }
                     }
@@ -151,7 +151,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
                                 if (x+k >= w)
                                     break;
                                 ptr = palette+(dib_type==DIB_OS2_V1 ? p[k]*3 : p[k]<<2);
-                                set_pixel(res, x+k, y, rgba(*(ptr+2), *(ptr+1), *(ptr), 0));
+                                iml_bitmap_setpixel(res, x+k, y, rgba(*(ptr+2), *(ptr+1), *(ptr), 0));
                             }
                         }
                     }
@@ -170,7 +170,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
                         for(x=0, i=0; x<w; x++, i++) {
                             p=*(buffer+i);
                             ptr=palette+(dib_size==12 ? p*3 : p<<2);
-                            set_pixel(res, x, y, rgba(*(ptr+2), *(ptr+1), *(ptr), 0));
+                            iml_bitmap_setpixel(res, x, y, rgba(*(ptr+2), *(ptr+1), *(ptr), 0));
                         }
                     }
                     break;
@@ -190,7 +190,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
                 fread(buffer, buf_size, 1, fd);
                 for(x=0, i=0; x<w; x++, i+=2) {
                     p = (*(buffer+i+1)<<8) | *(buffer+i);
-                    set_pixel(res, x, y, rgba(((p>>10)&0x1f)<<3, ((p>>5)&0x1f)<<3, (p&0x1f)<<3, 0));
+                    iml_bitmap_setpixel(res, x, y, rgba(((p>>10)&0x1f)<<3, ((p>>5)&0x1f)<<3, (p&0x1f)<<3, 0));
                 }
             }
             break;
@@ -206,7 +206,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
             for(y=h>0? h-1: 0; h>0? y>=0: y<-h; h>0? y--: y++) {
                 fread(buffer, buf_size, 1, fd);
                 for(x=0, i=0; x<w; x++, i+=bpp==24? 3: 4) {
-                    set_pixel(res, x, y, rgba(*(buffer+i+2), *(buffer+i+1), *(buffer+i), 0));
+                    iml_bitmap_setpixel(res, x, y, rgba(*(buffer+i+2), *(buffer+i+1), *(buffer+i), 0));
                 }
             }
             break;

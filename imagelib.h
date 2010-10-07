@@ -68,7 +68,7 @@ typedef struct _IML_Bitmap {
  @param: x: x coordinate
  @param: y: y coordinate
  @param: color: pixel color */
-inline void set_pixel(IML_Bitmap* self, int32_t x, int32_t y, uint32_t color) {
+inline void iml_bitmap_setpixel(IML_Bitmap* self, int32_t x, int32_t y, uint32_t color) {
     *(self->pixels+(y*self->width)+x) = color;
 }
 
