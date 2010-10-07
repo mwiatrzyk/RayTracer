@@ -8,6 +8,24 @@
 uint32_t iml_errno = 0;
 
 
+int iml_error(void) {
+    return iml_errno;
+}
+
+
+char* iml_error_string(int errno) {
+    int32_t i=0;
+    while(1) {
+        if (errno == iml_errdesc[i].errno) {
+            return iml_errdesc[i].desc;
+        } else if (iml_errdesc[i].errno == -1) {
+            return iml_errdesc[i].desc;
+        }
+        i++;
+    }
+}
+
+
 IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background) {
     IML_Bitmap* res = malloc(sizeof(IML_Bitmap));
     if(!res) {
@@ -51,7 +69,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
     fread(&hdr.bfReserved2, sizeof(hdr.bfReserved2), 1, fd);
     fread(&hdr.bfOffBits, sizeof(hdr.bfOffBits), 1, fd);
     if (hdr.bfType[0] != 'B' || hdr.bfType[1] != 'M') {
-        iml_errno = IML_INVALID_FILE_FORMAT;  //BM signature check failed
+        iml_errno = IML_NOT_A_BMP_FILE;  //BM signature check failed
         return NULL;
     }
 
