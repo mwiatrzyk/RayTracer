@@ -217,3 +217,8 @@ IL_Bitmap* il_load(const char* filename) {
 
     return res;
 }
+
+
+void il_save(const IL_Bitmap* self, const char* filename, uint16_t bpp) {
+    
+}

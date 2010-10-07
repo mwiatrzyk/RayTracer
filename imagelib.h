@@ -100,4 +100,12 @@ void il_destroy_bitmap(IL_Bitmap* self);
  @param: filename: path to image file */
 IL_Bitmap* il_load(const char* filename);
 
+/* Saves given IL_Bitmap object into specified BMP file with specified bit
+ * count. 
+ 
+ @param: self: pointer to IL_Bitmap object
+ @param: filename: pointer to file name where bitmap will be stored
+ @param: bpp: bit count (1, 4, 8, 16, 24 or 32) */
+void il_save(const IL_Bitmap* self, const char* filename, uint16_t bpp);
+
 #endif
