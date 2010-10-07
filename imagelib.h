@@ -130,7 +130,7 @@ inline uint32_t geta(uint32_t color) {
 IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background);
 
 /* Releases memory occupied by given IML_Bitmap object. */
-void iml_destroy_bitmap(IML_Bitmap* self);
+void iml_bitmap_destroy(IML_Bitmap* self);
 
 /* Loads bitmap image from given file and returns it as buffer of bytes. Bitmap
  * is decoded to RGBA format used by IML_Bitmap object.

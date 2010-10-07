@@ -25,7 +25,7 @@ IML_Bitmap* iml_bitmap_create(int32_t width, int32_t height, uint32_t background
 }
 
 
-void iml_destroy_bitmap(IML_Bitmap* self) {
+void iml_bitmap_destroy(IML_Bitmap* self) {
     free(self->pixels);
     free(self);
 }
