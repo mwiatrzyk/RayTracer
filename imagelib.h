@@ -87,7 +87,7 @@ inline uint32_t iml_bitmap_getpixel(const IML_Bitmap* self, int32_t x, int32_t y
  @param: g: green component
  @param: b: blue component
  @param: a: alpha component (actually not used - this value is ignored) */
-inline uint32_t rgba(uint32_t r, uint32_t g, uint32_t b, uint32_t a) {
+inline uint32_t iml_rgba(uint32_t r, uint32_t g, uint32_t b, uint32_t a) {
     return ((r&0xff)<<24) | ((g&0xff)<<16) | ((b&0xff)<<8) | (a&0xff);
 }
 
