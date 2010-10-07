@@ -31,7 +31,7 @@ void iml_bitmap_destroy(IML_Bitmap* self) {
 }
 
 
-IML_Bitmap* iml_load(const char* filename) {
+IML_Bitmap* iml_bitmap_load(const char* filename) {
     IML_BmpHeader hdr;
     IML_DibType dib_type;
 

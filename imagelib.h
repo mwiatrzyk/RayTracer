@@ -136,7 +136,7 @@ void iml_bitmap_destroy(IML_Bitmap* self);
  * is decoded to RGBA format used by IML_Bitmap object.
  
  @param: filename: path to image file */
-IML_Bitmap* iml_load(const char* filename);
+IML_Bitmap* iml_bitmap_load(const char* filename);
 
 /* Saves given IML_Bitmap object into specified BMP file with specified bit
  * count. 
