@@ -94,13 +94,19 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
     IML_BmpHeader hdr;
     IML_DibType dib_type;
 
+    /* dynamically allocated resources to be released at the end of function
+     * call */
+    FILE *fd=NULL;
+    unsigned char *buffer=NULL;
+    unsigned char *palette=NULL;
+
     memset(&hdr, 0, sizeof(hdr));
 
     //open file
-    FILE *fd = fopen(filename, "rb");
+    fd = fopen(filename, "rb");
     if (!fd) {
         iml_errno = IML_IO_ERROR;  //unable to read from file
-        return NULL;
+        goto garbage_collect;
     }
 
     //read file header and check if this is real BMP file
@@ -139,18 +145,18 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
     }
     
     //create result bitmap
-    IML_Bitmap* res = iml_bitmap_create(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, iml_rgba(0,0,0,0));
+    IML_Bitmap *res = iml_bitmap_create(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, iml_rgba(0,0,0,0));
     if (!res) {
         iml_errno = IML_NOT_ENOUGH_MEMORY;
-        return NULL;
+        goto garbage_collect;
     }
 
     //make scanline buffer - temporary storage of lines loaded from file
     uint32_t buf_size = (uint32_t)(4*ceil(hdr.biBitCount*hdr.biWidth/32.0));
-    unsigned char *buffer = malloc(buf_size*sizeof(unsigned char)); 
+    buffer = malloc(buf_size*sizeof(unsigned char)); 
     if (!buffer) {
         iml_errno = IML_NOT_ENOUGH_MEMORY;
-        return NULL;
+        goto garbage_collect;
     }
 
     switch(hdr.biBitCount) {
@@ -160,10 +166,10 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
         case 8: {
             //allocate memory for palette
             uint32_t pal_size = hdr.biClrUsed!=0 ? hdr.biClrUsed : (dib_type==DIB_OS2_V1 ? 3 : 4)*(uint32_t)pow(2.0f, hdr.biBitCount);
-            unsigned char *palette = malloc(pal_size*sizeof(unsigned char));
+            palette = malloc(pal_size*sizeof(unsigned char));
             if (!palette) {
                 iml_errno = IML_NOT_ENOUGH_MEMORY;
-                return NULL;
+                goto garbage_collect;
             }
             
             //read palette from file
@@ -272,15 +278,27 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
         }
     }
 
-    fclose(fd);
-
+    garbage_collect:
+        if(fd)
+            fclose(fd);
+        if(buffer)
+            free(buffer);
+        if(palette)
+            free(palette);
+    
     return res;
 }
 
 
 void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp) {
     IML_BmpHeader hdr;
-    uint32_t palette_size=4*(uint32_t)pow(2.0f, bpp);
+    uint32_t palette_size=bpp<=8? 4*(uint32_t)pow(2.0f, bpp): 0;  //palette is used only in 1, 4 and 8 bpp bitmaps
+    
+    /* dynamically allocated variables 
+     * (released at the end of function call) */
+    FILE *fd=NULL;
+    unsigned char *buffer=NULL;
+    unsigned char *palette=NULL;
 
     memset(&hdr, 0, sizeof(hdr));
 
@@ -291,10 +309,10 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
     }
     
     //open file for binary write mode
-    FILE *fd=fopen(filename, "wb");
+    fd=fopen(filename, "wb");
     if (!fd) {
         iml_errno = IML_IO_ERROR;  //unable to read from file
-        return;
+        goto garbage_collect;
     }
 
     //prepare header
@@ -331,10 +349,10 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
 
     //create scanline buffer
     uint32_t buf_size=(uint32_t)(4*ceil(bpp*self->width/32.0));
-    unsigned char *buffer=malloc(buf_size*sizeof(unsigned char));
+    buffer=malloc(buf_size);
     if(!buffer) {
         iml_errno = IML_NOT_ENOUGH_MEMORY;
-        return;
+        goto garbage_collect;
     }
 
     switch(bpp) {
@@ -342,11 +360,11 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
         case 4:
         case 8: {
             //create palette buffer
-            unsigned char *palette=malloc(palette_size*sizeof(unsigned char));
+            palette=malloc(palette_size);
             if (!palette) {
                 iml_errno = IML_NOT_ENOUGH_MEMORY;
-                return;
-            }          
+                goto garbage_collect;
+            }
 
             switch(bpp) {
                 case 1: {
@@ -415,7 +433,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
                                 p2=0;
                             }
                             *(buffer+i) = (iml_getr(p1)>>7)<<7 | (iml_getg(p1)>>6)<<5 | (iml_getb(p1)>>7)<<4 | 
-                                          (iml_getr(p2)>>7)<<3 | (iml_getg(p2)>>6)<<1 | iml_getb(p2)>>7;
+                                          (iml_getr(p2)>>7)<<3 | (iml_getg(p2)>>6)<<1 | (iml_getb(p2)>>7);
                         }
                         fwrite(buffer, buf_size, 1, fd);
                     }
@@ -454,6 +472,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
                     break;
                 }
             }
+            break;
         }
 
         //16bit color (R -> 5 bits, G -> 5 bits, B -> 5 bits)
@@ -462,10 +481,10 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
             uint32_t i, p, col16;
 
             for(y=h-1; y>=0; y--) {
-                memset(buffer, 0, buf_size*sizeof(unsigned char));
+                memset(buffer, 0, buf_size);
                 for(x=0, i=0; x<w; x++, i+=2) {
                     p = iml_bitmap_getpixel(self, x, y);
-                    col16 = (iml_getr(p)>>3)<<10 | (iml_getg(p)>>3)<<5 | iml_getb(p)>>3;
+                    col16 = ((iml_getr(p)>>3)<<10) | ((iml_getg(p)>>3)<<5) | (iml_getb(p)>>3);
                     *(buffer+i+1) = (col16>>8)&0xff;
                     *(buffer+i) = col16&0xff;
                 }
@@ -481,7 +500,7 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
             uint32_t i, p;
 
             for(y=h-1; y>=0; y--) {
-                memset(buffer, 0, buf_size*sizeof(unsigned char));
+                memset(buffer, 0, buf_size);
                 for(x=0, i=0; x<w; x++, i+=bpp==24? 3: 4) {
                     p = iml_bitmap_getpixel(self, x, y);
                     *(buffer+i) = iml_getb(p);
@@ -494,5 +513,11 @@ void iml_bitmap_save(const IML_Bitmap* self, const char* filename, uint16_t bpp)
         }
     }
     
-    fclose(fd);
+    garbage_collect:
+        if(fd)
+            fclose(fd);
+        if(buffer)
+            free(buffer);
+        if(palette)
+            free(palette);
 }
