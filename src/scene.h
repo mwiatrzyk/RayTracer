@@ -9,8 +9,12 @@ typedef struct _SCN_Vertex {
     float x, y, z;  //vertex coords
 } SCN_Vertex;
 
+typedef struct _SCN_Surface {
+} SCN_Surface;
+
 typedef struct _SCN_Triangle {
     SCN_Vertex *i, *j, *k;  //pointers to triangle's vertices
+    SCN_Surface *s;  //pointer to surface description of this triangle
 } SCN_Triangle;
 
 typedef struct _SCN_Scene {
@@ -25,9 +29,6 @@ typedef struct _SCN_Camera {
 
 typedef struct _SCN_Lights {
 } SCN_Lights;
-
-typedef struct _SCN_SurfaceAttribs {
-} SCN_SurfaceAttribs;
 
 //// FUNCTIONS ////////////////////////////////////////////////
 

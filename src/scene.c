@@ -7,7 +7,8 @@
 
 SCN_Scene* scn_scene_load(const char *filename) {
     char c;
-    int32_t i, _i, j, k, len, vcount=-1, tcount=-1;
+    int32_t i, _i, j, k, len, vcount=-1, tcount=-1, pcount=-1;
+    char *pch;
     FILE *fd=NULL;
     char *buffer=NULL;
     SCN_Scene *res=NULL;
@@ -69,6 +70,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
             res->tsize = tcount;
             res->t = malloc(tcount*sizeof(SCN_Triangle));  //create array of triangles
             if (!res->t) {
+                free(res->v);  //res->v is allocated so it need to be freed before call to free(res)
                 free(res);
                 res = NULL;
                 errno = E_MEMORY;
@@ -82,6 +84,21 @@ SCN_Scene* scn_scene_load(const char *filename) {
             res->t[i].j = &res->v[j];
             res->t[i].k = &res->v[k];
             i++; tcount--;
+        
+        /* initialize pcount variable */
+        } else if (pcount == -1) {
+            i = 0;
+            pcount = res->tsize;
+
+        /* reading part assignment of triangles */
+        } else if (pcount > 0) {
+            pch = strtok(buffer, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
+            while(pch != NULL) {
+                sscanf(pch, "%d", &_i);
+                //TODO: assign _i-th surface to i-th triangle
+                pch = strtok(NULL, " \t\n\r");
+                i++; pcount--;
+            }
         }
     }
 
