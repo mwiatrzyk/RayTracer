@@ -73,6 +73,7 @@ void iml_bitmap_destroy(IML_Bitmap* self) {
 IML_Bitmap* iml_bitmap_load(const char* filename) {
     IML_BmpHeader hdr;
     IML_DibType dib_type;
+    IML_Bitmap *res=NULL;
 
     /* dynamically allocated resources to be released at the end of function
      * call */
@@ -97,7 +98,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
     fread(&hdr.bfOffBits, sizeof(hdr.bfOffBits), 1, fd);
     if (hdr.bfType[0] != 'B' || hdr.bfType[1] != 'M') {
         errno = E_INVALID_FILE;  //BM signature check failed
-        return NULL;
+        goto garbage_collect;
     }
 
     //read DIB part of file header
@@ -117,7 +118,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
         fread(&hdr.biReserved, sizeof(hdr.biReserved), 1, fd);
         if (hdr.biCompression != 0) {
             errno = E_INVALID_FILE_FORMAT;
-            return NULL;
+            goto garbage_collect;
         }
         dib_type = DIB_WIN_V3;
     } else {
@@ -125,7 +126,7 @@ IML_Bitmap* iml_bitmap_load(const char* filename) {
     }
     
     //create result bitmap
-    IML_Bitmap *res = iml_bitmap_create(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, iml_rgba(0,0,0,0));
+    res = iml_bitmap_create(hdr.biWidth, hdr.biHeight>0 ? hdr.biHeight : -hdr.biHeight, iml_rgba(0,0,0,0));
     if (!res) {
         errno = E_MEMORY;
         goto garbage_collect;
