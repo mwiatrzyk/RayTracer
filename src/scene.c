@@ -48,6 +48,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
                 errno = E_MEMORY;
                 goto cleanup;
             }
+            memset(res, 0, sizeof(SCN_Scene));
             i = 0;
             res->vsize = vcount;
             res->v = malloc(vcount*sizeof(SCN_Vertex));  //create array of vertices
