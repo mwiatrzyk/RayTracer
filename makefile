@@ -5,8 +5,8 @@ LDFLAGS=-lm
 SDIR=./src
 ODIR=$(SDIR)/obj
 
-SOURCES=main.c imagelib.c
-HEADERS=imagelib.h
+SOURCES=main.c imagelib.c scene.c error.c
+HEADERS=imagelib.h scene.h error.h
 EXECUTABLE=raytrace
 
 OBJ=$(SOURCES:.c=.o)
