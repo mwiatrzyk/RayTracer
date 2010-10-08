@@ -24,6 +24,9 @@ typedef struct _SCN_Vertex {
  @attr: eta: refractive index 
  @attr: kr: ??? */
 typedef struct _SCN_Surface {
+    float R, G, B;
+    float kd, ks, g, ka;
+    float kt, eta, kr;
 } SCN_Surface;
 
 /* Definition of triangle. 
