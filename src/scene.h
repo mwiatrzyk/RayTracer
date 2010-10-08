@@ -13,7 +13,16 @@ typedef struct _SCN_Vertex {
 } SCN_Vertex;
 
 /* Definition of surface. A surface is a group of triangles that have the same
- * properties. */
+ * properties. 
+ 
+ @attr: R, G, B: surface color (components are normalized: 0..1)
+ @attr: kd: diffusion factor (0..1) 
+ @attr: ks: mirroring factor (0..1) 
+ @attr: g: glitter factor (0..1) 
+ @attr: ka: ??? 
+ @attr: kt: transparency factor (0..1) 
+ @attr: eta: refractive index 
+ @attr: kr: ??? */
 typedef struct _SCN_Surface {
 } SCN_Surface;
 
@@ -51,9 +60,11 @@ typedef struct _SCN_Scene {
 typedef struct _SCN_Camera {
 } SCN_Camera;
 
-/* Definition of lights. */
-typedef struct _SCN_Lights {
-} SCN_Lights;
+/* Definition of single light. 
+
+ @attr: x, y, z: light position in scene's space 
+ @attr: p: total luminous flux 
+ @attr: R, G, B: light color */
 
 //// FUNCTIONS ////////////////////////////////////////////////
 
