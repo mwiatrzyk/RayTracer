@@ -103,4 +103,11 @@ SCN_Scene* scn_scene_load(const char *filename);
  @param: filename: name of file containing lights data */
 SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename);
 
+/* Loads surface data from file and fills SCN_Scene object with surface data.
+
+ @param: self: pointer to SCN_Scene object, previously created by call to
+    `scn_scene_load` function 
+ @param: filename: absolute path of file to load */
+SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename);
+
 #endif
