@@ -1,6 +1,7 @@
 #ifndef __ERROR_H
 #define __ERROR_H
 
+#include "types.h"
 #include <errno.h>
 
 //// STRUCTURES ///////////////////////////////////////////////
