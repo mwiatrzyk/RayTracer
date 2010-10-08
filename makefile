@@ -14,6 +14,9 @@ _OBJ=$(patsubst %, $(ODIR)/%, $(OBJ))
 _SOURCES=$(patsubst %, $(SDIR)/%, $(SOURCES))
 _HEADERS=$(patsubst %, $(SDIR)/%, $(HEADERS))
 
+__start__: $(EXECUTABLE)
+	./$(EXECUTABLE)
+
 $(ODIR)/%.o: $(SDIR)/%.c $(_HEADERS)
 	$(CC) $(CFLAGS) -o $@ $<
 
