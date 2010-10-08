@@ -88,9 +88,18 @@ typedef struct _SCN_Camera {
 
 //// FUNCTIONS ////////////////////////////////////////////////
 
-/* Loads scene geometry description from given *.brp file.
+/* Loads scene geometry description from given *.brp file and creates SCN_Scene
+ * object.
  
  @param: filename: absolute path to geometry file */
 SCN_Scene* scn_scene_load(const char *filename);
+
+/* Loads lights data from given file and fills given given SCN_Scene object
+ * with light data. 
+ 
+ @param: self: pointer to SCN_Scene object which must be created by previously
+    call to `scn_scene_load` function
+ @param: filename: name of file containing lights data */
+SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename);
 
 #endif

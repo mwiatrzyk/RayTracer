@@ -112,3 +112,8 @@ SCN_Scene* scn_scene_load(const char *filename) {
 
     return res;
 }
+
+
+SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
+    
+}
