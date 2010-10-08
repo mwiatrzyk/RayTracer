@@ -182,3 +182,8 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
 SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
     return NULL;
 }
+
+
+SCN_Camera* scn_camera_load(const char *filename) {
+    return NULL;
+}

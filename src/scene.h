@@ -110,4 +110,9 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename);
  @param: filename: absolute path of file to load */
 SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename);
 
+/* Loads camera configuration from given file. 
+
+ @param: filename: absolute path to camera configuration file */
+SCN_Camera* scn_camera_load(const char *filename);
+
 #endif
