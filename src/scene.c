@@ -95,7 +95,8 @@ SCN_Scene* scn_scene_load(const char *filename) {
             pch = strtok(buffer, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
             while(pch != NULL) {
                 sscanf(pch, "%d", &_i);
-                //TODO: assign _i-th surface to i-th triangle
+                res->t[i].sid = _i;
+                res->t[i].s = NULL;
                 pch = strtok(NULL, " \t\n\r");
                 i++; pcount--;
             }
