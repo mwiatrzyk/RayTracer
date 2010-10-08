@@ -18,18 +18,6 @@ typedef enum _IML_Error {
     IML_INVALID_BPP           //bits per pixel argument is invalid
 } IML_Error;
 
-/* List of error text descriptions. */
-struct IML_ErrorDescription { int32_t errno; char desc[256];};
-static struct IML_ErrorDescription iml_errdesc[] = {
-    {IML_IO_ERROR, "unable to read and/or write to file"},
-    {IML_NOT_A_BMP_FILE, "not a BMP file"},
-    {IML_FORMAT_NOT_SUPPORTED, "BMP format not supported"},
-    {IML_NOT_ENOUGH_MEMORY, "not enough memory"},
-    {IML_INVALID_BPP, "invalid number of bits per pixel"},
-    {0, "operation finished with no errors"},
-    {-1, "unexpected error"}
-};
-
 /* Enumeration of DIB header types. */
 typedef enum _IML_DibType {
     DIB_UNKNOWN = 0,

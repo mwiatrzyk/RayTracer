@@ -8,6 +8,19 @@
 uint32_t iml_errno = 0;
 
 
+/* List of error text descriptions. */
+struct IML_ErrorDescription { int32_t errno; char desc[256];};
+static struct IML_ErrorDescription iml_errdesc[] = {
+    {IML_IO_ERROR, "unable to read and/or write to file"},
+    {IML_NOT_A_BMP_FILE, "not a BMP file"},
+    {IML_FORMAT_NOT_SUPPORTED, "BMP format not supported"},
+    {IML_NOT_ENOUGH_MEMORY, "not enough memory"},
+    {IML_INVALID_BPP, "invalid number of bits per pixel"},
+    {0, "operation finished with no errors"},
+    {-1, "unexpected error"}
+};
+
+
 inline void iml_bitmap_setpixel(IML_Bitmap* self, int32_t x, int32_t y, uint32_t color) {
     *(self->pixels+(y*self->width)+x) = color;
 }
