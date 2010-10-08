@@ -39,6 +39,17 @@ typedef struct _SCN_Triangle {
     SCN_Surface *s;  //pointer to surface description of this triangle
 } SCN_Triangle;
 
+/* Definition of single light. 
+
+ @attr: x, y, z: light position in scene's space 
+ @attr: p: total luminous flux 
+ @attr: R, G, B: light color */
+typedef struct _SCN_Light {
+    float x, y, z;
+    float p;
+    float R, G, B;
+} SCN_Light;
+
 /* Groups vertices and triangles in one place creating scene. This object will
  * contain only geometrical definition of scene. Full scene definition
  * requires also lights and surface to be desribed. 
@@ -71,17 +82,6 @@ typedef struct _SCN_Camera {
     /* screen size (resolution) */
     int32_t sw, sh;
 } SCN_Camera;
-
-/* Definition of single light. 
-
- @attr: x, y, z: light position in scene's space 
- @attr: p: total luminous flux 
- @attr: R, G, B: light color */
-typedef struct _SCN_Light {
-    float x, y, z;
-    float p;
-    float R, G, B;
-} SCN_Light;
 
 //// FUNCTIONS ////////////////////////////////////////////////
 
