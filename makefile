@@ -1,18 +1,21 @@
 CC=gcc
 CFLAGS=-c -Wall
 LDFLAGS=-lm
+
+SDIR=./src
+ODIR=$(SDIR)/obj
+
 SOURCES=main.c imagelib.c
-OBJECTS=$(SOURCES:.cpp=.o)
+HEADERS=imagelib.h
 EXECUTABLE=raytrace
 
-__start__: $(EXECUTABLE)
-	./$(EXECUTABLE)
+OBJ=$(SOURCES:.c=.o)
+_OBJ=$(patsubst %, $(ODIR)/%, $(OBJ))
+_SOURCES=$(patsubst %, $(SDIR)/%, $(SOURCES))
+_HEADERS=$(patsubst %, $(SDIR)/%, $(HEADERS))
 
-all: $(SOURCES) $(EXECUTABLE)
-	
-$(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+$(ODIR)/%.o: $(SDIR)/%.c $(_HEADERS)
+	$(CC) $(CFLAGS) -o $@ $<
 
-.cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
-
+$(EXECUTABLE): $(_OBJ) 
+	$(CC) $(LDFLAGS) -o $@ $^
