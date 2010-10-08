@@ -61,8 +61,11 @@ typedef struct _SCN_Light {
 typedef struct _SCN_Scene {
     int32_t vsize;   //number of vertices in scene
     int32_t tsize;   //number of triangles in scene
+    int32_t lsize;  //number of lights
     SCN_Vertex *v;   //array of vertices
     SCN_Triangle *t; //array of triangles
+    SCN_Light *l;   //array of lights
+    SCN_Surface *s;  //array of surface properties
 } SCN_Scene;
 
 /* Definition of camera. All coordinates (except screen size) are in scene's
