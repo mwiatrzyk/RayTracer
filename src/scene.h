@@ -116,4 +116,16 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename);
  @param: filename: absolute path to camera configuration file */
 SCN_Camera* scn_camera_load(const char *filename);
 
+/* Releases memory occupied by camera object `self`. 
+
+ @param: self: pointer to SCN_Camera object previously created by call to
+    `scn_camera_load` */
+void scn_camera_destroy(SCN_Camera *self);
+
+/* Releases memory occupied by scene object `self`.
+
+ @param: self: pointer to SCN_Scene previously created by call to
+    `scn_scene_load` */
+void scn_scene_destroy(SCN_Scene *self);
+
 #endif

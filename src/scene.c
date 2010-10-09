@@ -283,3 +283,21 @@ SCN_Camera* scn_camera_load(const char *filename) {
 
     return res;
 }
+
+
+void scn_camera_destroy(SCN_Camera *self) {
+    free(self);
+}
+
+
+void scn_scene_destroy(SCN_Scene *self) {
+    if(self->v)
+        free(self->v);
+    if(self->t)
+        free(self->t);
+    if(self->l)
+        free(self->l);
+    if(self->s)
+        free(self->s);
+    free(self);
+}
