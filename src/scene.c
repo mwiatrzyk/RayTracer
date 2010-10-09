@@ -155,7 +155,65 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
 
 
 SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
-    return NULL;
+    SCN_Scene *res=self;
+    FILE *fd=NULL;
+    char *line=NULL;
+    int32_t scount=-1, i;
+    float kd, ks, g, ka, R, G, B;
+    float kt, eta, kr;
+    
+    fd = fopen(filename, "r");
+    if(!fd) {
+        errno = E_IO;
+        goto cleanup;
+    }
+
+    while((line=scn_file_readline(fd)) != NULL) {
+        if(scount == -1) {
+            sscanf(line, "%d", &scount);
+            i = 0;
+            self->ssize = scount;
+            self->s = malloc(scount*sizeof(SCN_Surface));
+            if(!self->s) {
+                errno = E_MEMORY;
+                res = NULL;
+                goto cleanup;
+            }
+        } else {
+            if(i%2 == 0) {
+                sscanf(line, "%f %f %f %f %f %f %f", &kd, &ks, &g, &ka, &R, &G, &B);
+            } else {
+                sscanf(line, "%f %f %f", &kt, &eta, &kr);
+                self->s[i].kd = kd;
+                self->s[i].ks = ks;
+                self->s[i].g = g;
+                self->s[i].ka = ka;
+                self->s[i].R = R;
+                self->s[i].G = G;
+                self->s[i].B = B;
+                self->s[i].kt = kt;
+                self->s[i].eta = eta;
+                self->s[i].kr = kr;
+            }
+            i++;
+        }
+    }
+
+    //update pointer to surface for each triangle
+    for(i=0; i<self->tsize; i++) {
+        if(self->t[i].sid >= self->ssize) {  //need more surface data
+            errno = E_NOT_ENOUGH_SURFACES;
+            res = NULL;
+            goto cleanup;
+        }
+        self->t[i].s = &self->s[self->t[i].sid];
+    }
+
+    cleanup:
+        if(fd)
+            fclose(fd);
+    
+    return res;
 }
 
 
