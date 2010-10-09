@@ -14,6 +14,9 @@ static struct ERR_Description errdesc[] = {
     {E_INVALID_FILE,        "not a BMP file"},
     {E_INVALID_FILE_FORMAT, "BMP format not supported"},
     {E_INVALID_BPP,         "invalid number of bits per pixel"},
+    
+    //error codes used by scene.c
+    {E_NOT_ENOUGH_SURFACES, "scene requires more surfaces to be defined"},
 
     //no error, unexpected error (array end signature)
     {0,                     "success"},

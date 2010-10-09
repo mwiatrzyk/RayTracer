@@ -24,7 +24,10 @@ typedef enum _ERR_Code {
     /* used by: imagelib.c */
     E_INVALID_FILE,         //trying to load file of invalid format
     E_INVALID_FILE_FORMAT,  //image file format is not supported
-    E_INVALID_BPP           //bits per pixel argument is invalid (correct ones are: 1, 4, 8, 16, 24, 32)
+    E_INVALID_BPP,          //bits per pixel argument is invalid (correct ones are: 1, 4, 8, 16, 24, 32)
+
+    /* used by: scene.c */
+    E_NOT_ENOUGH_SURFACES   //not enough surfaces to cover entire scene
 } ERR_Code;
 
 //// FUNCTIONS ////////////////////////////////////////////////
