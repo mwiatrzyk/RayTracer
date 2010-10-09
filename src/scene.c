@@ -160,5 +160,63 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
 
 
 SCN_Camera* scn_camera_load(const char *filename) {
-    return NULL;
+    FILE *fd=NULL;
+    SCN_Camera *res=NULL;
+    char *line=NULL;
+    int16_t vp=1, sc=3, sr=1;
+    float x, y, z;
+
+    fd=fopen(filename, "r");
+    if (!fd) {
+        errno = E_IO;
+        goto cleanup;
+    }
+
+    while((line=scn_file_readline(fd)) != NULL) {
+        /* viewpoint position */
+        if(vp > 0) {
+            res = malloc(sizeof(SCN_Camera));
+            if(!res) {
+                errno = E_MEMORY;
+                goto cleanup;
+            }
+            memset(res, 0, sizeof(SCN_Camera));
+            sscanf(line, "%f %f %f", &res->vx, &res->vy, &res->vz);
+            vp--;
+        /* screen position */
+        } else if(sc > 0) {
+            sscanf(line, "%f %f %f", &x, &y, &z);
+            switch(sc) {
+                //upper left screen corner
+                case 3:
+                    res->ul_x = x;
+                    res->ul_y = y;
+                    res->ul_z = z;
+                    break;
+                //bottom left screen corner
+                case 2:
+                    res->bl_x = x;
+                    res->bl_y = y;
+                    res->bl_z = z;
+                    break;
+                //upper right screen corner
+                case 1:
+                    res->ur_x = x;
+                    res->ur_y = y;
+                    res->ur_z = z;
+                    break;
+            }
+            sc--;
+        /* screen resolution */
+        } else if(sr > 0) {
+            sscanf(line, "%d %d", &res->sw, &res->sh);
+            sr--;
+        }
+    }
+
+    cleanup:
+        if (fd) 
+            fclose(fd);
+
+    return res;
 }
