@@ -97,7 +97,8 @@ typedef struct _SCN_Camera {
 SCN_Scene* scn_scene_load(const char *filename);
 
 /* Loads lights data from given file and fills given given SCN_Scene object
- * with light data. 
+ * with light data. Returns `self` if operation is successfull or NULL
+ * otherwise.
  
  @param: self: pointer to SCN_Scene object which must be created by previously
     call to `scn_scene_load` function
@@ -105,6 +106,7 @@ SCN_Scene* scn_scene_load(const char *filename);
 SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename);
 
 /* Loads surface data from file and fills SCN_Scene object with surface data.
+ * Returns `self` if operation is successfull or NULL otherwise.
 
  @param: self: pointer to SCN_Scene object, previously created by call to
     `scn_scene_load` function 
