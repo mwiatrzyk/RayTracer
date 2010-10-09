@@ -5,7 +5,12 @@
 #include <string.h>
 
 
-char* scn_file_readline(FILE *self) {
+/* Helper function for reading lines from scene files. Sequential calls to this
+ * function will return pointer to next line in file filtered from whitechars
+ * and comments.
+ 
+ @param: self: pointer to FILE object */
+static char* scn_file_readline(FILE *self) {
     static char buffer[1024];
     int32_t i, len;
     char *res=NULL, c;
