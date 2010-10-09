@@ -6,6 +6,22 @@
 
 
 static char* scn_file_readline(FILE *self) {
+    static char buffer[1024];
+    int32_t i, len;
+    char *res=NULL, c;
+    while(res=fgets(buffer, 1024, self)) {
+        len = strlen(buffer);
+        for(i=0; i<len; i++) {
+            c = buffer[i];
+            if(c!=' ' && c!='\t' && c!='\n' && c!='\r')
+                break;  //other character than white one
+        }
+        if(i == len)
+            continue;  // white chars only found
+        if(strstr(buffer, "//"))
+            continue;  //comment found
+        return res;
+    }
     return NULL;
 }
 
