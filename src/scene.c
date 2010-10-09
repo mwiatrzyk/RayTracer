@@ -113,10 +113,9 @@ SCN_Scene* scn_scene_load(const char *filename) {
 
 
 SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
-    char c;
-    int32_t i, len, lcount=-1;
+    int32_t i, lcount=-1;
     FILE *fd=NULL;
-    char *buffer=NULL;
+    char *line=NULL;
     SCN_Scene *res=self;
 
     fd=fopen(filename, "r");
@@ -125,30 +124,10 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
         goto cleanup;
     }
     
-    uint16_t buf_size=1024;
-    buffer = malloc(buf_size);
-    if (!buffer) {
-        errno = E_MEMORY;
-        goto cleanup;
-    }
-    
-    while(!feof(fd)) {
-        if(!fgets(buffer, buf_size, fd))
-            break;
-        len = strlen(buffer);
-        for(i=0; i<len; i++) {
-            c = buffer[i];
-            if(c!=' ' && c!='\t' && c!='\n' && c!='\r')
-                break;  //other character than white one
-        }
-        if(i == len)
-            continue;  // white chars only found
-        if(strstr(buffer, "//"))
-            continue;  //comment found
-
+    while((line=scn_file_readline(fd)) != NULL) {
         /* get number of lights */
         if (lcount == -1) {
-            sscanf(buffer, "%d", &lcount);  //read number of lights
+            sscanf(line, "%d", &lcount);  //read number of lights
             i = 0;
             self->lsize = lcount;
             self->l = malloc(lcount*sizeof(SCN_Light));
@@ -160,9 +139,9 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
 
         /* get single light */
         } else {
-            sscanf(buffer, "%f %f %f %f %f %f %f", &self->l[i].x, &self->l[i].y, &self->l[i].z, 
-                                                   &self->l[i].p, 
-                                                   &self->l[i].R, &self->l[i].G, &self->l[i].B);
+            sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].x, &self->l[i].y, &self->l[i].z, 
+                                                 &self->l[i].p, 
+                                                 &self->l[i].R, &self->l[i].G, &self->l[i].B);
             i++;
         }
     }
@@ -170,8 +149,6 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
     cleanup:
         if(fd)
             fclose(fd);
-        if(buffer)
-            free(buffer);
 
     return res;
 }
