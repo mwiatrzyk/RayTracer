@@ -2,6 +2,7 @@
 #define __SCENE_H
 
 #include "types.h"
+#include <stdio.h>
 
 //// STRUCTURES ///////////////////////////////////////////////
 
@@ -86,6 +87,15 @@ typedef struct _SCN_Camera {
     /* screen size (resolution) */
     int32_t sw, sh;
 } SCN_Camera;
+
+//// STATIC FUNCTIONS /////////////////////////////////////////
+
+/* Helper function for reading lines from scene files. Sequential calls to this
+ * function will return pointer to next line in file filtered from whitechars
+ * and comments.
+ 
+ @param: self: pointer to FILE object */
+static char* scn_file_readline(FILE *self);
 
 //// FUNCTIONS ////////////////////////////////////////////////
 

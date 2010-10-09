@@ -5,6 +5,11 @@
 #include <string.h>
 
 
+static char* scn_file_readline(FILE *self) {
+    return NULL;
+}
+
+
 SCN_Scene* scn_scene_load(const char *filename) {
     char c;
     int32_t i, _i, j, k, len, vcount=-1, tcount=-1, pcount=-1;
