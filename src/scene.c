@@ -5,11 +5,11 @@
 #include <string.h>
 
 
-static char* scn_file_readline(FILE *self) {
+char* scn_file_readline(FILE *self) {
     static char buffer[1024];
     int32_t i, len;
     char *res=NULL, c;
-    while(res=fgets(buffer, 1024, self)) {
+    while((res=fgets(buffer, 1024, self)) != NULL) {
         len = strlen(buffer);
         for(i=0; i<len; i++) {
             c = buffer[i];
@@ -27,11 +27,10 @@ static char* scn_file_readline(FILE *self) {
 
 
 SCN_Scene* scn_scene_load(const char *filename) {
-    char c;
-    int32_t i, _i, j, k, len, vcount=-1, tcount=-1, pcount=-1;
+    int32_t i, _i, j, k, vcount=-1, tcount=-1, pcount=-1;
     char *pch;
     FILE *fd=NULL;
-    char *buffer=NULL;
+    char *line=NULL;
     SCN_Scene *res=NULL;
 
     fd=fopen(filename, "r");
@@ -40,30 +39,10 @@ SCN_Scene* scn_scene_load(const char *filename) {
         goto cleanup;
     }
     
-    uint16_t buf_size=1024;
-    buffer = malloc(buf_size);
-    if (!buffer) {
-        errno = E_MEMORY;
-        goto cleanup;
-    }
-    
-    while(!feof(fd)) {
-        if(!fgets(buffer, buf_size, fd))
-            break;
-        len = strlen(buffer);
-        for(i=0; i<len; i++) {
-            c = buffer[i];
-            if(c!=' ' && c!='\t' && c!='\n' && c!='\r')
-                break;  //other character than white one
-        }
-        if(i == len)
-            continue;  // white chars only found
-        if(strstr(buffer, "//"))
-            continue;  //comment found
-
+    while((line=scn_file_readline(fd)) != NULL) {
         /* reading number of vertices */
         if(vcount == -1) {
-            sscanf(buffer, "%d", &vcount);  //read number of vertices
+            sscanf(line, "%d", &vcount);  //read number of vertices
             res = malloc(sizeof(SCN_Scene));  //create SCN_Scene object
             if (!res) {
                 errno = E_MEMORY;
@@ -82,12 +61,12 @@ SCN_Scene* scn_scene_load(const char *filename) {
 
         /* reading vertices into array */
         } else if (vcount > 0) {
-            sscanf(buffer, "%f %f %f", &res->v[i].x, &res->v[i].y, &res->v[i].z);
+            sscanf(line, "%f %f %f", &res->v[i].x, &res->v[i].y, &res->v[i].z);
             i++; vcount--;
 
         /* reading number of triangles */
         } else if (tcount == -1) {
-            sscanf(buffer, "%d", &tcount);
+            sscanf(line, "%d", &tcount);
             i = 0;
             res->tsize = tcount;
             res->t = malloc(tcount*sizeof(SCN_Triangle));  //create array of triangles
@@ -101,7 +80,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
 
         /* reading triangles into array */
         } else if (tcount > 0) {
-            sscanf(buffer, "%d %d %d", &_i, &j, &k);
+            sscanf(line, "%d %d %d", &_i, &j, &k);
             res->t[i].i = &res->v[_i];  //assign address of correct vertex
             res->t[i].j = &res->v[j];
             res->t[i].k = &res->v[k];
@@ -114,7 +93,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
 
         /* reading part assignment of triangles */
         } else if (pcount > 0) {
-            pch = strtok(buffer, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
+            pch = strtok(line, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
             while(pch != NULL) {
                 sscanf(pch, "%d", &_i);
                 res->t[i].sid = _i;
@@ -126,10 +105,8 @@ SCN_Scene* scn_scene_load(const char *filename) {
     }
 
     cleanup:
-        if(fd)
+        if (fd)
             fclose(fd);
-        if(buffer)
-            free(buffer);
 
     return res;
 }
