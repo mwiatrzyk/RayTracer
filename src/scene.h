@@ -79,11 +79,10 @@ typedef struct _SCN_Scene {
  @attr: ur_x, ur_y, ur_z: coordinates of screen's upper-right corner */
 typedef struct _SCN_Camera {
     /* observer location */
-    float vx, vy, vz;
-    /* screen location (in scene's space) */
-    float ul_x, ul_y, ul_z; 
-    float bl_x, bl_y, bl_z;
-    float ur_x, ur_y, ur_z;
+    SCN_Vertex ob;
+    //float vx, vy, vz;
+    /* screen location (in scene's space): ul - upper left, bl - bottom left, ur - upper right */
+    SCN_Vertex ul, bl, ur;
     /* screen size (resolution) */
     int32_t sw, sh;
 } SCN_Camera;

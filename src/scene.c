@@ -227,7 +227,7 @@ SCN_Camera* scn_camera_load(const char *filename) {
     SCN_Camera *res=NULL;
     char *line=NULL;
     int16_t vp=1, sc=3, sr=1;
-    float x, y, z;
+    SCN_Vertex tmp;
 
     fd=fopen(filename, "r");
     if (!fd) {
@@ -244,29 +244,23 @@ SCN_Camera* scn_camera_load(const char *filename) {
                 goto cleanup;
             }
             memset(res, 0, sizeof(SCN_Camera));
-            sscanf(line, "%f %f %f", &res->vx, &res->vy, &res->vz);
+            sscanf(line, "%f %f %f", &res->ob.x, &res->ob.y, &res->ob.z);
             vp--;
         /* screen position */
         } else if(sc > 0) {
-            sscanf(line, "%f %f %f", &x, &y, &z);
+            sscanf(line, "%f %f %f", &tmp.x, &tmp.y, &tmp.z);
             switch(sc) {
                 //upper left screen corner
                 case 3:
-                    res->ul_x = x;
-                    res->ul_y = y;
-                    res->ul_z = z;
+                    res->ul = tmp;
                     break;
                 //bottom left screen corner
                 case 2:
-                    res->bl_x = x;
-                    res->bl_y = y;
-                    res->bl_z = z;
+                    res->bl = tmp;
                     break;
                 //upper right screen corner
                 case 1:
-                    res->ur_x = x;
-                    res->ur_y = y;
-                    res->ur_z = z;
+                    res->ur = tmp;
                     break;
             }
             sc--;
