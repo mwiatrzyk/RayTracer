@@ -12,7 +12,9 @@ inline SCN_Vertex vec_normalize(SCN_Vertex *v);
 /* Multiplicates given vector by given constant and returns resulting vector. */
 inline SCN_Vertex vec_mul(SCN_Vertex *v, float t);
 
-/* Calculates and returns vector that is sum of given two vectors. */
+/* Calculates and returns vector that is sum of given two vectors. If first
+ * vector is interpreted as point this function performs translation of point
+ * `v1` by vector `v2`. */
 inline SCN_Vertex vec_sum(SCN_Vertex *v1, SCN_Vertex *v2);
 
 #endif
