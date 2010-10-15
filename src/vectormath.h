@@ -17,4 +17,7 @@ inline SCN_Vertex vec_mul(SCN_Vertex *v, float t);
  * `v1` by vector `v2`. */
 inline SCN_Vertex vec_sum(SCN_Vertex *v1, SCN_Vertex *v2);
 
+/* Calculates crossproduct of two vectors. */
+inline SCN_Vertex vec_crossproduct(SCN_Vertex *v1, SCN_Vertex *v2);
+
 #endif

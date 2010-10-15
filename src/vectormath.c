@@ -41,3 +41,13 @@ inline SCN_Vertex vec_sum(SCN_Vertex *v1, SCN_Vertex *v2) {
     };
     return res;
 }
+
+
+inline SCN_Vertex vec_crossproduct(SCN_Vertex *v1, SCN_Vertex *v2) {
+    SCN_Vertex res = {
+        v1->y*v2->z - v1->z*v2->y,
+        v1->z*v2->x - v1->x*v2->z,
+        v1->x*v2->y - v1->y*v2->x
+    };
+    return res;
+}
