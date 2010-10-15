@@ -18,7 +18,7 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_
     float ox=o->x, oy=o->y, oz=o->z;  // ray origin
     float nx, ny, nz;
     while(t < maxt) {
-        nx=t->n.x; ny=t->n.y; nz=t->n.z;  // triangle's normal vector
+        nx=t->nx; ny=t->ny; nz=t->nz;  // triangle's normal vector
         ray_dotp_n = rx*nx + ry*ny + rz*nz; // vec_dotproduct(ray, &t->n);
         if(ray_dotp_n == 0.0f) {  // intersection point is somewhere in infinity (ray is parallel to triangle)
             t++;
@@ -44,16 +44,19 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
         /* calculate normal vector and orient it towards observer */
         SCN_Vertex ij=vec_make_vector(t->i, t->j), ik=vec_make_vector(t->i, t->k);
         SCN_Vertex oi=vec_make_vector(&camera->ob, t->i);
-        SCN_Vertex xprod = vec_crossproduct(&ij, &ik);
+        SCN_Vertex norm = vec_crossproduct(&ij, &ik);
         oi = vec_normalize(&oi);  // vector from observer towards current triangle (normalized)
-        t->n = vec_normalize(&xprod);  // normal vector of current triangle (normalized)
-        if(vec_dotproduct(&oi, &t->n) < 0.0f) {
-            t->n = vec_mul(&t->n, -1.0f);  // point normal vector towards observer
+        norm = vec_normalize(&norm);  // normal vector of current triangle (normalized)
+        if(vec_dotproduct(&oi, &norm) < 0.0f) {
+            norm = vec_mul(&norm, -1.0f);  // point normal vector towards observer
         }
+        t->nx = norm.x;
+        t->ny = norm.y;
+        t->nz = norm.z;
 
         /* calculate `d` parameter of triangle's plane equation: i*n+d=0 ->
          * d=-i*n, where: i - one of triangle's vertices, n - normal vector */
-        t->d = -vec_dotproduct(t->i, &t->n);
+        t->d = -vec_dotproduct(t->i, &norm);
 
         t++;
     }
