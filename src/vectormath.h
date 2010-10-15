@@ -20,4 +20,7 @@ inline SCN_Vertex vec_sum(SCN_Vertex *v1, SCN_Vertex *v2);
 /* Calculates crossproduct of two vectors. */
 inline SCN_Vertex vec_crossproduct(SCN_Vertex *v1, SCN_Vertex *v2);
 
+/* Calculates dotproduct of two vectors. */
+inline float vec_dotproduct(SCN_Vertex *v1, SCN_Vertex *v2);
+
 #endif
