@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -Wall
+CFLAGS=-c -Wall -O2
 LDFLAGS=-lm
 
 SDIR=./src
