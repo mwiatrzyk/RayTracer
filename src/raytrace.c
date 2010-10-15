@@ -63,8 +63,10 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
 //// INTERFACE FUNCTIONS //////////////////////////////////////
 
 IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
+    uint32_t color;
     float x, y, w=camera->sw, h=camera->sh;
     SCN_Vertex *a=&camera->ul, *b=&camera->ur, *c=&camera->bl, *o=&camera->ob;
+    IML_Bitmap *res=iml_bitmap_create(camera->sw, camera->sh, 0);
     
     // preprocess scene (calculate all needed coefficients etc.)
     preprocess_scene(scene, camera);
@@ -80,9 +82,12 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
                 x_coef*(b->z - a->z) + y_coef*(c->z - a->z) + a->z - o->z
             };
             ray = vec_normalize(&ray);
-            //printf("%f %f %f\n", ray.x, ray.y, ray.z);
+
+            /* Trace current ray and calculate color of current pixel. */
+            color = raytrace(scene->t, (SCN_Triangle*)(scene->t+scene->tsize), o, &ray);
+            iml_bitmap_setpixel(res, (int32_t)x, (int32_t)y, color);    
         }
     }
 
-    return NULL;
+    return res;
 }
