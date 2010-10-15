@@ -11,18 +11,20 @@
  @param: o: ray origin point
  @param: ray: ray vector (normalized) */
 static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_Vertex *ray) {
-    // find nearest triangle that intersects with given ray
+    /* Find nearest triangle that intersects with given ray. */
     SCN_Triangle *nearest=t;
     float d, dmin, ray_dotp_n;
-    //float rx=ray->x, ry=ray->y, rz=ray->z;
-    //float nx, ny, nz;
+    float rx=ray->x, ry=ray->y, rz=ray->z;  // ray direction vector
+    float ox=o->x, oy=o->y, oz=o->z;  // ray origin
+    float nx, ny, nz;
     while(t < maxt) {
-        ray_dotp_n = vec_dotproduct(ray, &t->n);
+        nx=t->n.x; ny=t->n.y; nz=t->n.z;  // triangle's normal vector
+        ray_dotp_n = rx*nx + ry*ny + rz*nz; // vec_dotproduct(ray, &t->n);
         if(ray_dotp_n == 0.0f) {  // intersection point is somewhere in infinity (ray is parallel to triangle)
             t++;
             continue;
         }
-        d = -(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
+        d = -(ox*nx + oy*ny + oz*nz + t->d)/ray_dotp_n; //-(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
         if(d <= 0.0f) {  // TODO: t <= 0.0f or t < 0.0f ?
             t++;
             continue;  // intersection point is "behind" current ray
