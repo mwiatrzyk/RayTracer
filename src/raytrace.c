@@ -1,3 +1,4 @@
+#include <float.h>
 #include "raytrace.h"
 #include "vectormath.h"
 
@@ -9,22 +10,18 @@
  @param: t: pointer to scene's triangle array 
  @param: maxt: pointer to first element above scene's triangle array 
  @param: o: ray origin point
- @param: ray: ray vector (normalized) */
-static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_Vertex *ray) {
+ @param: r: ray vector (normalized) */
+static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_Vertex *r) {
     /* Find nearest triangle that intersects with given ray. */
     SCN_Triangle *nearest=t;
-    float d, dmin, ray_dotp_n;
-    float rx=ray->x, ry=ray->y, rz=ray->z;  // ray direction vector
-    float ox=o->x, oy=o->y, oz=o->z;  // ray origin
-    float nx, ny, nz;
+    float d, dmin=FLT_MAX, ray_dotp_n;
     while(t < maxt) {
-        nx=t->nx; ny=t->ny; nz=t->nz;  // triangle's normal vector
-        ray_dotp_n = rx*nx + ry*ny + rz*nz; // vec_dotproduct(ray, &t->n);
+        ray_dotp_n = DOT_PRODUCT(r, &t->n); // vec_dotproduct(ray, &t->n);
         if(ray_dotp_n == 0.0f) {  // intersection point is somewhere in infinity (ray is parallel to triangle)
             t++;
             continue;
         }
-        d = -(ox*nx + oy*ny + oz*nz + t->d)/ray_dotp_n; //-(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
+        d = -(DOT_PRODUCT(o, &t->n) + t->d)/ray_dotp_n; //-(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
         if(d <= 0.0f) {  // TODO: t <= 0.0f or t < 0.0f ?
             t++;
             continue;  // intersection point is "behind" current ray
@@ -50,13 +47,11 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
         if(vec_dotproduct(&oi, &norm) < 0.0f) {
             norm = vec_mul(&norm, -1.0f);  // point normal vector towards observer
         }
-        t->nx = norm.x;
-        t->ny = norm.y;
-        t->nz = norm.z;
+        t->n = norm;
 
         /* calculate `d` parameter of triangle's plane equation: i*n+d=0 ->
          * d=-i*n, where: i - one of triangle's vertices, n - normal vector */
-        t->d = -vec_dotproduct(t->i, &norm);
+        t->d = -vec_dotproduct(t->i, &t->n);
 
         t++;
     }
