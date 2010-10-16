@@ -4,6 +4,14 @@
 #include "types.h"
 #include <stdio.h>
 
+//// ENUMS ////////////////////////////////////////////////////
+
+typedef enum _SCN_ProjectionPlane {
+    PP_XOY,
+    PP_XOZ,
+    PP_ZOY
+} SCN_ProjectionPlane;
+
 //// STRUCTURES ///////////////////////////////////////////////
 
 /* Definition of single vertex in 3D space. 
@@ -41,6 +49,11 @@ typedef struct _SCN_Triangle {
     /* speedup & helper attributes (initialized just before raytracing process) */
     SCN_Vertex n;  // normal vector
     float d;  // d coefficient of triangle's plane equation: i*n + d = 0
+    SCN_ProjectionPlane p_plane;  // projection plane of this triangle (used while checking intersection)
+    float ij_a, ij_b, ij_sign;  // triangle's borders after projection onto `p_plane`
+    float jk_a, jk_b, jk_sign;
+    float ik_a, ik_b, ik_sign;
+    bool ij_vert, jk_vert, ik_vert;  // indicates vertical lines (if true)
 } SCN_Triangle;
 
 /* Definition of single light. 
