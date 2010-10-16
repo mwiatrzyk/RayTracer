@@ -16,12 +16,12 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_
     SCN_Triangle *nearest=t;
     float d, dmin=FLT_MAX, ray_dotp_n;
     while(t < maxt) {
-        ray_dotp_n = DOT_PRODUCT(r, &t->n); // vec_dotproduct(ray, &t->n);
+        ray_dotp_n = vec_dotproduct(r, &t->n); // vec_dotproduct(ray, &t->n);
         if(ray_dotp_n == 0.0f) {  // intersection point is somewhere in infinity (ray is parallel to triangle)
             t++;
             continue;
         }
-        d = -(DOT_PRODUCT(o, &t->n) + t->d)/ray_dotp_n; //-(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
+        d = -(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n; //-(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
         if(d <= 0.0f) {  // TODO: t <= 0.0f or t < 0.0f ?
             t++;
             continue;  // intersection point is "behind" current ray
