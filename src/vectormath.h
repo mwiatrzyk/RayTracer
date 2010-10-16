@@ -1,6 +1,7 @@
 #ifndef __VECTORMATH_H
 #define __VECTORMATH_H
 
+#include <math.h>
 #include "scene.h"
 
 /* Creates vector pointing from point `a` towards point `b`. */
@@ -11,6 +12,17 @@ inline SCN_Vertex vec_make_vector(SCN_Vertex *a, SCN_Vertex *b) {
         b->z - a->z
     };
     return res;
+}
+
+/* Returns length of given vector. */
+inline float vec_length(SCN_Vertex *v) {
+    return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
+}
+
+/* Calculates Euclidean distance between given two vectors. */
+inline float vec_distance(SCN_Vertex *v1, SCN_Vertex *v2) {
+    float dx=v1->x-v2->x, dy=v1->y-v2->y, dz=v1->z-v2->z;
+    return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
 /* Normalizes given vector and returns normalized vector. */
