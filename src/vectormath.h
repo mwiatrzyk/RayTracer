@@ -3,6 +3,12 @@
 
 #include "scene.h"
 
+//// MACROS ///////////////////////////////////////////////////
+
+#define DOT_PRODUCT(v1, v2) ((v1)->x*(v2)->x + (v1)->y*(v2)->y + (v1)->z*(v2)->z)
+
+//// FUNCTIONS ////////////////////////////////////////////////
+
 /* Creates vector pointing from point `a` towards point `b`. */
 inline SCN_Vertex vec_make_vector(SCN_Vertex *a, SCN_Vertex *b);
 
