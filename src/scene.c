@@ -95,7 +95,14 @@ SCN_Scene* scn_scene_load(const char *filename) {
         } else if (pcount == -1) {
             i = 0;
             pcount = res->tsize;
-
+            pch = strtok(line, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
+            while(pch != NULL) {
+                sscanf(pch, "%d", &_i);
+                res->t[i].sid = _i;
+                res->t[i].s = NULL;
+                pch = strtok(NULL, " \t\n\r");
+                i++; pcount--;
+            }
         /* reading part assignment of triangles */
         } else if (pcount > 0) {
             pch = strtok(line, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
@@ -189,16 +196,16 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
                 sscanf(line, "%f %f %f %f %f %f %f", &kd, &ks, &g, &ka, &R, &G, &B);
             } else {
                 sscanf(line, "%f %f %f", &kt, &eta, &kr);
-                self->s[i].kd = kd;
-                self->s[i].ks = ks;
-                self->s[i].g = g;
-                self->s[i].ka = ka;
-                self->s[i].R = R;
-                self->s[i].G = G;
-                self->s[i].B = B;
-                self->s[i].kt = kt;
-                self->s[i].eta = eta;
-                self->s[i].kr = kr;
+                self->s[i/2].kd = kd;
+                self->s[i/2].ks = ks;
+                self->s[i/2].g = g;
+                self->s[i/2].ka = ka;
+                self->s[i/2].R = R;
+                self->s[i/2].G = G;
+                self->s[i/2].B = B;
+                self->s[i/2].kt = kt;
+                self->s[i/2].eta = eta;
+                self->s[i/2].kr = kr;
             }
             i++;
         }
