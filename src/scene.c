@@ -91,7 +91,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
             res->t[i].k = &res->v[k];
             i++; tcount--;
         
-        /* initialize pcount variable */
+        /* initialize pcount variable and read first line of part assignment */
         } else if (pcount == -1) {
             i = 0;
             pcount = res->tsize;
