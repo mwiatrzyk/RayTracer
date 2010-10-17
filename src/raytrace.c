@@ -70,23 +70,28 @@ static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex 
  @param: r: ray vector (normalized) */
 static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_Vertex *r) {
     /* Find nearest triangle that intersects with given ray. */
-    SCN_Triangle *nearest=t;
+    SCN_Triangle *nearest=NULL;
     float d, dmin=FLT_MAX, ray_dotp_n;
     while(t < maxt) {
-        ray_dotp_n = vec_dotproduct(r, &t->n); // vec_dotproduct(ray, &t->n);
-        if(ray_dotp_n == 0.0f) {  // intersection point is somewhere in infinity (ray is parallel to triangle)
-            t++;
-            continue;
-        }
-        d = -(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n; //-(vec_dotproduct(o, &t->n) + t->d)/ray_dotp_n;
-        if(d <= 0.0f) {  // TODO: t <= 0.0f or t < 0.0f ?
-            t++;
-            continue;  // intersection point is "behind" current ray
+        if(ray_triangle_intersection(t, o, r, &d)) {
+            if(d < dmin) {
+                dmin = d;
+                nearest = t;
+            }
         }
         #ifdef BENCHMARK
             intersection_test_count++;
         #endif
         t++;
+    }
+    if(nearest) {
+        uint32_t r, g, b;
+        r = nearest->s->R * 255.0f;
+        g = nearest->s->G * 255.0f;
+        b = nearest->s->B * 255.0f;
+        return iml_rgba(r, g, b, 0);
+    } else {
+        return 0;
     }
 }
 
@@ -144,7 +149,7 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
                 x_coef*(b->y - a->y) + y_coef*(c->y - a->y) + a->y - o->y,
                 x_coef*(b->z - a->z) + y_coef*(c->z - a->z) + a->z - o->z
             };
-            ray = vec_normalize(&ray);
+            vec_vector_normalize(&ray);
 
             /* Trace current ray and calculate color of current pixel. */
             color = raytrace(scene->t, (SCN_Triangle*)(scene->t+scene->tsize), o, &ray);
