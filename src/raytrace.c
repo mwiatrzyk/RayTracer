@@ -27,15 +27,12 @@ uint32_t intersection_test_count = 0;
     ray->triangle intersection point is stored here */
 static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float *d) {
     #define EPSILON 0.000001f
-    SCN_Vertex ij, ik, pvec, tvec, qvec;
+    SCN_Vertex pvec, tvec, qvec;
     float det, inv_det, u, v;
     
-    vec_vector_make(&ij, t->i, t->j);
-    vec_vector_make(&ik, t->i, t->k);
+    vec_vector_crossp(&pvec, r, &t->ik);
 
-    vec_vector_crossp(&pvec, r, &ik);
-
-    det = vec_vector_dotp(&ij, &pvec);
+    det = vec_vector_dotp(&t->ij, &pvec);
 
     if(det > -EPSILON && det < EPSILON) {
         return 0;
@@ -50,13 +47,13 @@ static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex 
         return 0;
     }
 
-    vec_vector_crossp(&qvec, &tvec, &ij);
+    vec_vector_crossp(&qvec, &tvec, &t->ij);
     v = vec_vector_dotp(r, &qvec) * inv_det;
     if(v < 0.0f || u + v > 1.0f) {
         return 0;
     }
     
-    *d = vec_vector_dotp(&ik, &qvec) * inv_det;
+    *d = vec_vector_dotp(&t->ik, &qvec) * inv_det;
 
     return 1;
 }
@@ -100,26 +97,12 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_
  * triangle in scene. */
 static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
     SCN_Triangle *t=scene->t, *maxt=(SCN_Triangle*)(scene->t + scene->tsize);
-    printf("%ld\n", scene->tsize);
+    SCN_Vertex ij, ik, oi, n;
     while(t < maxt) {
-        /* calculate normal vector and orient it towards observer */
-        SCN_Vertex ij=vec_make_vector(t->i, t->j), ik=vec_make_vector(t->i, t->k);
-        SCN_Vertex oi=vec_make_vector(&camera->ob, t->i);
-        SCN_Vertex norm = vec_crossproduct(&ij, &ik);
-        oi = vec_normalize(&oi);  // vector from observer towards current triangle (normalized)
-        norm = vec_normalize(&norm);  // normal vector of current triangle (normalized)
-        if(vec_dotproduct(&oi, &norm) < 0.0f) {
-            norm = vec_mul(&norm, -1.0f);  // point normal vector towards observer
-        }
-        t->n = norm;
-
-        /* calculate `d` parameter of triangle's plane equation: i*n+d=0 ->
-         * d=-i*n, where: i - one of triangle's vertices, n - normal vector */
-        t->d = -vec_dotproduct(t->i, &t->n);
-
+        vec_vector_make(&t->ij, t->i, t->j);
+        vec_vector_make(&t->ik, t->i, t->k);
         t++;
     }
-
     return scene;
 }
 
