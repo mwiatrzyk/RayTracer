@@ -2,6 +2,18 @@
 #include "raytrace.h"
 #include "vectormath.h"
 
+#define BENCHMARK
+
+#ifdef BENCHMARK
+#include <time.h>
+#endif
+
+
+//// GLOBALS //////////////////////////////////////////////////
+
+#ifdef BENCHMARK
+uint32_t intersection_test_count = 0;
+#endif
 
 //// HELPER FUNCTIONS /////////////////////////////////////////
 
@@ -71,7 +83,9 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_
             t++;
             continue;  // intersection point is "behind" current ray
         }
-        //printf("%f\n", d);
+        #ifdef BENCHMARK
+            intersection_test_count++;
+        #endif
         t++;
     }
 }
@@ -116,6 +130,10 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
     // preprocess scene (calculate all needed coefficients etc.)
     preprocess_scene(scene, camera);
 
+    #ifdef BENCHMARK
+        clock_t start = clock();
+    #endif
+
     // main loop
     for(y=0.5f; y<h; y+=1.0f) {
         for(x=0.5f; x<w; x+=1.0f) {
@@ -134,5 +152,10 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
         }
     }
 
+    #ifdef BENCHMARK
+        double total_time = (double)(clock()-start)/CLOCKS_PER_SEC;
+        printf("Intersection tests per second: %lu\n", (uint32_t)(intersection_test_count/total_time));
+    #endif
+    
     return res;
 }
