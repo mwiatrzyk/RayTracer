@@ -5,6 +5,51 @@
 
 //// HELPER FUNCTIONS /////////////////////////////////////////
 
+/* Performs ray->triangle intersection test. Returns true if ray intersects
+ * with triangle or false otherwise. 
+ 
+ @param: t: triangle pointer
+ @param: o: ray origin
+ @param: r: ray direction (normalized)
+ @param: d: when triangle intersects with ray, distance from ray origin to
+    ray->triangle intersection point is stored here */
+static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float *d) {
+    #define EPSILON 0.000001f
+    SCN_Vertex ij, ik, pvec, tvec, qvec;
+    float det, inv_det, u, v;
+    
+    vec_vector_make(&ij, t->i, t->j);
+    vec_vector_make(&ik, t->i, t->k);
+
+    vec_vector_crossp(&pvec, r, &ik);
+
+    det = vec_vector_dotp(&ij, &pvec);
+
+    if(det > -EPSILON && det < EPSILON) {
+        return 0;
+    }
+    
+    inv_det = 1.0f / det;
+
+    vec_vector_make(&tvec, t->i, o);
+
+    u = vec_vector_dotp(&tvec, &pvec) * inv_det;
+    if(u < 0.0f || u > 1.0f) {
+        return 0;
+    }
+
+    vec_vector_crossp(&qvec, &tvec, &ij);
+    v = vec_vector_dotp(r, &qvec) * inv_det;
+    if(v < 0.0f || u + v > 1.0f) {
+        return 0;
+    }
+    
+    *d = vec_vector_dotp(&ik, &qvec) * inv_det;
+
+    return 1;
+}
+
+
 /* RayTracing algorithm implementation. 
 
  @param: t: pointer to scene's triangle array 
