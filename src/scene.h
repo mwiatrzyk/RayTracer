@@ -47,6 +47,7 @@ typedef struct _SCN_Triangle {
     int32_t sid;  //surface index (used only to assign `s` pointer while loading surface description)
     SCN_Surface *s;  //pointer to surface description of this triangle
     /* speedup & helper attributes (initialized just before raytracing process) */
+    SCN_Vertex n;
     SCN_Vertex ij, ik;
 } SCN_Triangle;
 

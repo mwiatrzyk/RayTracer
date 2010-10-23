@@ -99,8 +99,19 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
     SCN_Triangle *t=scene->t, *maxt=(SCN_Triangle*)(scene->t + scene->tsize);
     SCN_Vertex ij, ik, oi, n;
     while(t < maxt) {
+        /* make vectors i->j and i->k (used by intersection test function) */
         vec_vector_make(&t->ij, t->i, t->j);
         vec_vector_make(&t->ik, t->i, t->k);
+        
+        /* make vector from observer towards one of triangle vertices */
+        vec_vector_normalize(vec_vector_make(&oi, &camera->ob, t->i));
+
+        /* create and normalize normal vector and point it towards camera */
+        vec_vector_normalize(vec_vector_crossp(&t->n, &t->ij, &t->ik));
+        if(vec_vector_dotp(&t->n, &oi) < 0.0f) {
+            vec_vector_mul(&t->n, &t->n, -1.0f);
+        }
+
         t++;
     }
     return scene;
