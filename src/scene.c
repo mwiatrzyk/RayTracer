@@ -151,8 +151,8 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
 
         /* get single light */
         } else {
-            sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].x, &self->l[i].y, &self->l[i].z, 
-                                                 &self->l[i].p, 
+            sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].p.x, &self->l[i].p.y, &self->l[i].p.z, 
+                                                 &self->l[i].flux, 
                                                  &self->l[i].R, &self->l[i].G, &self->l[i].B);
             i++;
         }

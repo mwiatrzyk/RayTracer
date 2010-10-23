@@ -56,8 +56,8 @@ typedef struct _SCN_Triangle {
  @attr: p: total luminous flux 
  @attr: R, G, B: light color */
 typedef struct _SCN_Light {
-    float x, y, z;
-    float p;
+    SCN_Vertex p;
+    float flux;
     float R, G, B;
 } SCN_Light;
 
