@@ -54,6 +54,8 @@ static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex 
     }
     
     *d = vec_vector_dotp(&t->ik, &qvec) * inv_det;
+    if(*d < 0.0f)
+        return 0;
 
     return 1;
 }
