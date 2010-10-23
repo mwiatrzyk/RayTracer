@@ -61,6 +61,27 @@ static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex 
 }
 
 
+static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current, SCN_Vertex *o, SCN_Vertex *lpos) {
+    float d, dmax=vec_vector_distance(o, lpos);
+    SCN_Vertex r, cl, ct;
+    
+    vec_vector_ray(&r, o, lpos);    // create ray vector pointing towards light
+    
+    while(t < maxt) {
+        if(t != current) {
+            if(is_intersection(t, o, &r, &d)) {
+                if(d < dmax) {
+                    return 1;
+                }
+            }
+        }
+        t++;
+    }
+
+    return 0;
+}
+
+
 /* RayTracing algorithm implementation. 
 
  @param: t: pointer to scene's triangle array 
