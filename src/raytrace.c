@@ -25,7 +25,7 @@ uint32_t intersection_test_count = 0;
  @param: r: ray direction (normalized)
  @param: d: when triangle intersects with ray, distance from ray origin to
     ray->triangle intersection point is stored here */
-static int ray_triangle_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float *d) {
+static int is_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float *d) {
     #define EPSILON 0.000001f
     SCN_Vertex pvec, tvec, qvec;
     float det, inv_det, u, v;
@@ -93,7 +93,7 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_
     SCN_Triangle *nearest=NULL;
     float d, dmin=FLT_MAX, ray_dotp_n;
     while(t < maxt) {
-        if(ray_triangle_intersection(t, o, r, &d)) {
+        if(is_intersection(tt, o, r, &d)) {
             if(d < dmin) {
                 dmin = d;
                 nearest = t;
