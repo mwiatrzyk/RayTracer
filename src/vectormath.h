@@ -81,4 +81,26 @@ inline float vec_vector_dotp(SCN_Vertex *self, SCN_Vertex *v) {
     return self->x*v->x + self->y*v->y + self->z*v->z;
 }
 
+/* Calculates normalized ray vector pointing from `a` towards `b`. */
+inline SCN_Vertex* vec_vector_ray(SCN_Vertex *self, SCN_Vertex *a, SCN_Vertex *b) {
+    self->x = b->x - a->x;
+    self->y = b->y - a->y;
+    self->z = b->z - a->z;
+    return vec_vector_normalize(self);
+}
+
+/* Solves parametric ray equation R(t)=O+tD for given params and returns
+ * resulting point. Used to calculate intersection point coordinates. 
+ 
+ @param: self: pointer to result point
+ @param: o: ray origin
+ @param: r: ray direction vector (must be normalized)
+ @param: d: distance parameter */
+inline SCN_Vertex* vec_vector_raypoint(SCN_Vertex *self, SCN_Vertex *o, SCN_Vertex *r, float d) {
+    self->x = o->x + d*r->x;
+    self->y = o->y + d*r->y;
+    self->z = o->z + d*r->z;
+    return self;
+}
+
 #endif
