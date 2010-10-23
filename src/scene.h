@@ -28,7 +28,7 @@ typedef struct _SCN_Vertex {
  @attr: kd: diffusion factor (0..1) 
  @attr: ks: mirroring factor (0..1) 
  @attr: g: glitter factor (0..1) 
- @attr: ka: ??? 
+ @attr: ka: ambient light factor 
  @attr: kt: transparency factor (0..1) 
  @attr: eta: refractive index 
  @attr: kr: ??? */
