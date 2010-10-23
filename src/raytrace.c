@@ -85,34 +85,52 @@ static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current,
 /* RayTracing algorithm implementation. 
 
  @param: t: pointer to scene's triangle array 
- @param: maxt: pointer to first element above scene's triangle array 
+ @param: maxt: pointer to first element beyond triangle array
+ @param: l: pointer to lights array
+ @param: maxl: pointer to first element beyond light array
  @param: o: ray origin point
  @param: r: ray vector (normalized) */
-static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Vertex *o, SCN_Vertex *r) {
-    /* Find nearest triangle that intersects with given ray. */
-    SCN_Triangle *nearest=NULL;
-    float d, dmin=FLT_MAX, ray_dotp_n;
-    while(t < maxt) {
+static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Light *l, SCN_Light *maxl, SCN_Vertex *o, SCN_Vertex *r) {
+    float R=0, G=0, B=0;
+    SCN_Vertex ipoint, ldir;
+    SCN_Triangle *nearest=NULL, *tt=t;
+    float d, dmin=FLT_MAX, ray_dotp_n, tmp;
+    while(tt < maxt) {
         if(is_intersection(tt, o, r, &d)) {
             if(d < dmin) {
                 dmin = d;
-                nearest = t;
+                nearest = tt;
             }
         }
         #ifdef BENCHMARK
             intersection_test_count++;
         #endif
-        t++;
+        tt++;
     }
     if(nearest) {
-        uint32_t r, g, b;
-        r = nearest->s->R * 255.0f;
-        g = nearest->s->G * 255.0f;
-        b = nearest->s->B * 255.0f;
-        return iml_rgba(r, g, b, 0);
-    } else {
-        return 0;
+        /* calculate intersection point with nearest triangle */
+        vec_vector_raypoint(&ipoint, o, r, dmin);
+        
+        /* ambient light amount */
+        R = nearest->s->ka * nearest->s->R;
+        G = nearest->s->ka * nearest->s->G;
+        B = nearest->s->ka * nearest->s->B;
+
+        /* shadow test */
+        while(l < maxl) {
+            vec_vector_ray(&ldir, o, &l->p);    // create normalized ray vector pointing towards light
+            
+            if(!is_shadow(t, maxt, nearest, &ipoint, &l->p)) {
+                /* diffusion light amount */
+                tmp = 1.0f; //0.1f * 1.0f * vec_vector_dotp(&nearest->n, &ldir);
+                R = nearest->s->R * tmp;
+                G = nearest->s->G * tmp;
+                B = nearest->s->B * tmp;
+            }
+            l++;
+        }
     }
+    return iml_rgba(R*255, G*255, B*255, 0);
 }
 
 
@@ -169,7 +187,9 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
             vec_vector_normalize(&ray);
 
             /* Trace current ray and calculate color of current pixel. */
-            color = raytrace(scene->t, (SCN_Triangle*)(scene->t+scene->tsize), o, &ray);
+            color = raytrace(scene->t, (SCN_Triangle*)(scene->t+scene->tsize),
+                             scene->l, (SCN_Light*)(scene->l+scene->lsize),
+                             o, &ray);
             iml_bitmap_setpixel(res, (int32_t)x, (int32_t)y, color);    
         }
     }
