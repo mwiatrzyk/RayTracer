@@ -46,7 +46,12 @@ typedef struct _IML_Bitmap {
     uint32_t *pixels;       //bitmap pixel array
 } IML_Bitmap;
 
-//// INLINE FUNCTIONS /////////////////////////////////////////
+/* Object that represents non normalized color. */
+typedef struct _IML_Color {
+    float r, g, b, a;
+} IML_Color;
+
+//// INLINE BITMAP FUNCTIONS //////////////////////////////////
 
 /* Sets pixel at given (x,y) coords to value specified in `color` without
  * buffer overrun checking. 
