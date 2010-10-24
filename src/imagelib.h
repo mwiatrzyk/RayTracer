@@ -64,6 +64,13 @@ static inline void iml_color_scale(IML_Color *self, IML_Color *color, float scal
     self->b = scale * color->b;
 }
 
+/* Add colors `a` and `b` and store result in color `self`. */
+static inline void iml_color_add(IML_Color *self, IML_Color *a, IML_Color *b) {
+    self->r = a->r + b->r;
+    self->g = a->g + b->g;
+    self->b = a->b + b->b;
+}
+
 //// INLINE BITMAP FUNCTIONS //////////////////////////////////
 
 /* Sets pixel at given (x,y) coords to value specified in `color` without
