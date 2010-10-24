@@ -51,6 +51,19 @@ typedef struct _IML_Color {
     float r, g, b, a;
 } IML_Color;
 
+//// INLINE COLOR FUNCTIONS ///////////////////////////////////
+
+/* Scale color by given constant and store result in `self`. 
+
+ @param: self: pointer to result object
+ @param: color: pointer to object to be scaled
+ @param: scale: scale value */
+static inline void iml_color_scale(IML_Color *self, IML_Color *color, float scale) {
+    self->r = scale * color->r;
+    self->g = scale * color->g;
+    self->b = scale * color->b;
+}
+
 //// INLINE BITMAP FUNCTIONS //////////////////////////////////
 
 /* Sets pixel at given (x,y) coords to value specified in `color` without
