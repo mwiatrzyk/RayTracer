@@ -61,15 +61,15 @@ static int is_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float 
 }
 
 
-static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current, SCN_Vertex *o, SCN_Vertex *lpos) {
+static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current, SCN_Vertex *o, SCN_Vertex *r, SCN_Vertex *lpos) {
     float d, dmax=vec_vector_distance(o, lpos);
-    SCN_Vertex r, cl, ct;
+    SCN_Vertex cl, ct;
     
-    vec_vector_ray(&r, o, lpos);    // create ray vector pointing towards light
+    //vec_vector_ray(&r, o, lpos);    // create ray vector pointing towards light
     
     while(t < maxt) {
         if(t != current) {
-            if(is_intersection(t, o, &r, &d)) {
+            if(is_intersection(t, o, r, &d)) {
                 if(d < dmax) {
                     return 1;
                 }
@@ -92,7 +92,7 @@ static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current,
  @param: r: ray vector (normalized) */
 static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Light *l, SCN_Light *maxl, SCN_Vertex *o, SCN_Vertex *r) {
     float R=0, G=0, B=0;
-    SCN_Vertex ipoint, ldir;
+    SCN_Vertex onew, rnew;
     SCN_Triangle *nearest=NULL, *tt=t;
     float d, dmin=FLT_MAX, ray_dotp_n, tmp;
     while(tt < maxt) {
@@ -109,7 +109,7 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Light *l, SCN_L
     }
     if(nearest) {
         /* calculate intersection point with nearest triangle */
-        vec_vector_raypoint(&ipoint, o, r, dmin);
+        vec_vector_raypoint(&onew, o, r, dmin);
         
         /* ambient light amount */
         R = nearest->s->ka * nearest->s->R;
@@ -118,9 +118,9 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Light *l, SCN_L
 
         /* shadow test */
         while(l < maxl) {
-            vec_vector_ray(&ldir, o, &l->p);    // create normalized ray vector pointing towards light
+            vec_vector_ray(&rnew, &onew, &l->p);
             
-            if(!is_shadow(t, maxt, nearest, &ipoint, &l->p)) {
+            if(!is_shadow(t, maxt, nearest, &onew, &rnew, &l->p)) {
                 /* diffusion light amount */
                 tmp = 1.0f; //0.1f * 1.0f * vec_vector_dotp(&nearest->n, &ldir);
                 R = nearest->s->R * tmp;
