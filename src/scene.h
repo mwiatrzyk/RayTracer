@@ -2,6 +2,7 @@
 #define __SCENE_H
 
 #include "types.h"
+#include "imagelib.h"
 #include <stdio.h>
 
 //// ENUMS ////////////////////////////////////////////////////
@@ -33,7 +34,7 @@ typedef struct _SCN_Vertex {
  @attr: eta: refractive index 
  @attr: kr: ??? */
 typedef struct _SCN_Surface {
-    float R, G, B;
+    IML_Color color;
     float kd, ks, g, ka;
     float kt, eta, kr;
 } SCN_Surface;
@@ -59,7 +60,7 @@ typedef struct _SCN_Triangle {
 typedef struct _SCN_Light {
     SCN_Vertex p;
     float flux;
-    float R, G, B;
+    IML_Color color;
 } SCN_Light;
 
 /* Groups vertices and triangles in one place creating scene. This object will

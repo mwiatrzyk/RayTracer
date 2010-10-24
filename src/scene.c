@@ -153,7 +153,7 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
         } else {
             sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].p.x, &self->l[i].p.y, &self->l[i].p.z, 
                                                  &self->l[i].flux, 
-                                                 &self->l[i].R, &self->l[i].G, &self->l[i].B);
+                                                 &self->l[i].color.r, &self->l[i].color.g, &self->l[i].color.b);
             i++;
         }
     }
@@ -200,9 +200,9 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
                 self->s[i/2].ks = ks;
                 self->s[i/2].g = g;
                 self->s[i/2].ka = ka;
-                self->s[i/2].R = R;
-                self->s[i/2].G = G;
-                self->s[i/2].B = B;
+                self->s[i/2].color.r = R;
+                self->s[i/2].color.g = G;
+                self->s[i/2].color.b = B;
                 self->s[i/2].kt = kt;
                 self->s[i/2].eta = eta;
                 self->s[i/2].kr = kr;
