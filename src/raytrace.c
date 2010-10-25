@@ -90,16 +90,27 @@ static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current,
  @param: maxl: pointer to first element beyond light array
  @param: o: ray origin point
  @param: r: ray vector (normalized) */
-static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Light *l, SCN_Light *maxl, SCN_Vertex *o, SCN_Vertex *r) {
-    float R=0, G=0, B=0;
-    SCN_Vertex onew, rnew;
+static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *skip, 
+                          SCN_Light *l, SCN_Light *maxl, 
+                          SCN_Vertex *o, SCN_Vertex *r, 
+                          float total_flux, uint32_t level) 
+{
+    IML_Color res={0.0f, 0.0f, 0.0f, 0.0f}, tmp, rcolor;
+    SCN_Vertex onew, rnew, rray, tmpv;
     SCN_Triangle *nearest=NULL, *tt=t;
-    float d, dmin=FLT_MAX, ray_dotp_n, tmp;
+    float d, dmin=FLT_MAX, df, rf, n_dot_lo;
+    
+    if(level == 0) {
+        return res;
+    }
+
     while(tt < maxt) {
-        if(is_intersection(tt, o, r, &d)) {
-            if(d < dmin) {
-                dmin = d;
-                nearest = tt;
+        if(tt != skip) {
+            if(is_intersection(tt, o, r, &d)) {
+                if(d < dmin) {
+                    dmin = d;
+                    nearest = tt;
+                }
             }
         }
         #ifdef BENCHMARK
@@ -107,30 +118,59 @@ static int32_t raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Light *l, SCN_L
         #endif
         tt++;
     }
+    
+    //if(level < 10) 
+    //    printf("%p\n", nearest);
+
     if(nearest) {
+        /* Initialize result color with ambient color */
+        iml_color_scale(&res, &nearest->s->color, nearest->s->ka * total_flux);
+
         /* calculate intersection point with nearest triangle */
         vec_vector_raypoint(&onew, o, r, dmin);
         
-        /* ambient light amount */
-        R = nearest->s->ka * nearest->s->R;
-        G = nearest->s->ka * nearest->s->G;
-        B = nearest->s->ka * nearest->s->B;
+        /* raytrace reflected ray */
+        if(nearest->s->ks > 0.0f) {
+            vec_vector_ray_reflected(&rray, &nearest->n, vec_vector_inverse(&tmpv, r));
+            rcolor = raytrace(t, maxt, nearest,
+                              l, maxl, 
+                              &onew, &rray, total_flux, level-1);
+            iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->ks));
+        }
 
-        /* shadow test */
+        /* raytrace refracted ray */
+        if(nearest->s->kr > 0.0f) {
+            vec_vector_ray_refracted(&rray, &nearest->n, vec_vector_inverse(&tmpv, r), nearest->s->eta);
+            rcolor = raytrace(t, maxt, nearest,
+                              l, maxl,
+                              &onew, &rray, total_flux, level-1);
+            iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kr));
+        }
+
+        /* calculate color at intersection point */
         while(l < maxl) {
+            df = rf = 0.0f;
             vec_vector_ray(&rnew, &onew, &l->p);
-            
+             
             if(!is_shadow(t, maxt, nearest, &onew, &rnew, &l->p)) {
-                /* diffusion light amount */
-                tmp = 1.0f; //0.1f * 1.0f * vec_vector_dotp(&nearest->n, &ldir);
-                R = nearest->s->R * tmp;
-                G = nearest->s->G * tmp;
-                B = nearest->s->B * tmp;
+                n_dot_lo = vec_vector_dotp(&nearest->n, &rnew);
+
+                /* diffusion factor */
+                df = nearest->s->kd * n_dot_lo;
+
+                /* reflection factor */
+                rf = nearest->s->ks * pow(vec_vector_dotp(r, vec_vector_ray_reflected2(&tmpv, &nearest->n, &rnew, n_dot_lo)), nearest->s->g);
+
+                /* calculate color */
+                iml_color_add(&tmp, &l->color, &nearest->s->color);
+                iml_color_scale(&tmp, &tmp, l->flux*(df+rf));
+                iml_color_add(&res, &res, &tmp);
             }
             l++;
         }
     }
-    return iml_rgba(R*255, G*255, B*255, 0);
+
+    return res;
 }
 
 
