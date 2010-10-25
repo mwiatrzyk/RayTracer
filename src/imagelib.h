@@ -46,7 +46,7 @@ typedef struct _IML_Bitmap {
     uint32_t *pixels;       //bitmap pixel array
 } IML_Bitmap;
 
-/* Object that represents non normalized color. */
+/* Object that represents color in [0..1] float range. */
 typedef struct _IML_Color {
     float r, g, b, a;
 } IML_Color;
@@ -58,17 +58,19 @@ typedef struct _IML_Color {
  @param: self: pointer to result object
  @param: color: pointer to object to be scaled
  @param: scale: scale value */
-static inline void iml_color_scale(IML_Color *self, IML_Color *color, float scale) {
+static inline IML_Color* iml_color_scale(IML_Color *self, IML_Color *color, float scale) {
     self->r = scale * color->r;
     self->g = scale * color->g;
     self->b = scale * color->b;
+    return self;
 }
 
 /* Add colors `a` and `b` and store result in color `self`. */
-static inline void iml_color_add(IML_Color *self, IML_Color *a, IML_Color *b) {
+static inline IML_Color* iml_color_add(IML_Color *self, IML_Color *a, IML_Color *b) {
     self->r = a->r + b->r;
     self->g = a->g + b->g;
     self->b = a->b + b->b;
+    return self;
 }
 
 //// INLINE BITMAP FUNCTIONS //////////////////////////////////
