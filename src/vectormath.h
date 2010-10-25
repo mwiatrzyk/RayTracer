@@ -111,4 +111,18 @@ static inline SCN_Vertex* vec_vector_raypoint(SCN_Vertex *self, SCN_Vertex *o, S
     return self;
 }
 
+/* Calculate normalized vector representing reflected ray by solving equation:
+ * Z=2N(N*L)-L. 
+ 
+ @param: self: result vector pointer
+ @param: n: surface's normal vector 
+ @param: l: normalized vector from light towards current intersection point */
+static inline SCN_Vertex* vec_vector_ray_reflected(SCN_Vertex *self, SCN_Vertex *n, SCN_Vertex *l) {
+    float n_dot_l = vec_vector_dotp(n, l);
+    self->x = 2.0f * n->x * n_dot_l - l->x;
+    self->y = 2.0f * n->y * n_dot_l - l->y;
+    self->z = 2.0f * n->z * n_dot_l - l->z;
+    return vec_vector_normalize(self);
+}
+
 #endif
