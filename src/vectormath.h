@@ -134,4 +134,13 @@ static inline SCN_Vertex* vec_vector_ray_reflected2(SCN_Vertex *self, SCN_Vertex
     return vec_vector_normalize(self);
 }
 
+/* Calculate normalized vector representing refracted ray. */
+static inline SCN_Vertex* vec_vector_ray_refracted(SCN_Vertex *self, SCN_Vertex *n, SCN_Vertex *l, float eta) {
+    float n_dotp_l=vec_vector_dotp(n, l);
+    float f=eta*n_dotp_l - sqrt(1.0f - (eta*eta) * (1.0f - n_dotp_l*n_dotp_l));
+    self->x = f*n->x - eta*l->x;
+    self->y = f*n->y - eta*l->y;
+    self->z = f*n->z - eta*l->z;
+}
+
 #endif
