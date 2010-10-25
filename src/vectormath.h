@@ -125,4 +125,13 @@ static inline SCN_Vertex* vec_vector_ray_reflected(SCN_Vertex *self, SCN_Vertex 
     return vec_vector_normalize(self);
 }
 
+/* Same as `vec_vector_ray_reflected` but requires dot product between `n` and
+ * `l` to be calculated outside and to be passed as `n_dot_l`. */
+static inline SCN_Vertex* vec_vector_ray_reflected2(SCN_Vertex *self, SCN_Vertex *n, SCN_Vertex *l, float n_dot_l) {
+    self->x = 2.0f * n->x * n_dot_l - l->x;
+    self->y = 2.0f * n->y * n_dot_l - l->y;
+    self->z = 2.0f * n->z * n_dot_l - l->z;
+    return vec_vector_normalize(self);
+}
+
 #endif
