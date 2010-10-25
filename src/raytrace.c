@@ -202,8 +202,9 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
 //// INTERFACE FUNCTIONS //////////////////////////////////////
 
 IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
-    uint32_t color;
-    float x, y, w=camera->sw, h=camera->sh;
+    IML_Color color;
+    int i;
+    float x, y, dx, dy, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=0.5f;
     SCN_Vertex *a=&camera->ul, *b=&camera->ur, *c=&camera->bl, *o=&camera->ob;
     IML_Bitmap *res=iml_bitmap_create(camera->sw, camera->sh, 0);
     
@@ -213,24 +214,49 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
     #ifdef BENCHMARK
         clock_t start = clock();
     #endif
+    
+    // calculate total flux of all lights
+    /*for(i=0; i<scene->lsize; i++) {
+        total_flux += scene->l[i].flux;
+    }*/
 
     // main loop
-    for(y=0.5f; y<h; y+=1.0f) {
-        for(x=0.5f; x<w; x+=1.0f) {
-            /* Calculate primary ray direction vector and normalize it. */
-            float x_coef=x/w, y_coef=y/h;
-            SCN_Vertex ray = {
-                x_coef*(b->x - a->x) + y_coef*(c->x - a->x) + a->x - o->x,
-                x_coef*(b->y - a->y) + y_coef*(c->y - a->y) + a->y - o->y,
-                x_coef*(b->z - a->z) + y_coef*(c->z - a->z) + a->z - o->z
-            };
-            vec_vector_normalize(&ray);
+    for(y=0.0f; y<h; y+=1.0f) {
+        for(x=0.0f; x<w; x+=1.0f) {
+            IML_Color sum={0.0f, 0.0f, 0.0f, 0.0f};
 
-            /* Trace current ray and calculate color of current pixel. */
-            color = raytrace(scene->t, (SCN_Triangle*)(scene->t+scene->tsize),
-                             scene->l, (SCN_Light*)(scene->l+scene->lsize),
-                             o, &ray);
-            iml_bitmap_setpixel(res, (int32_t)x, (int32_t)y, color);    
+            for(i=0, dy=0.0f; dy<1.0f; dy+=samples) {
+                for(dx=0.0f; dx<1.0f; dx+=samples, i++) {
+                    /* Calculate primary ray direction vector and normalize it. */
+                    float x_coef=(x+dx)/w, y_coef=(y+dy)/h;
+                    SCN_Vertex ray = {
+                        x_coef*(b->x - a->x) + y_coef*(c->x - a->x) + a->x - o->x,
+                        x_coef*(b->y - a->y) + y_coef*(c->y - a->y) + a->y - o->y,
+                        x_coef*(b->z - a->z) + y_coef*(c->z - a->z) + a->z - o->z
+                    };
+                    vec_vector_normalize(&ray);
+
+                    /* Trace current ray and calculate color of current pixel. */
+                    color = raytrace(scene->t, (SCN_Triangle*)(scene->t+scene->tsize), NULL,
+                                     scene->l, (SCN_Light*)(scene->l+scene->lsize),
+                                     o, &ray, total_flux, 10);
+
+                    /* Normalize color */
+                    iml_color_scale(&color, &color, 255.0f/total_flux);
+
+                    /* Add to total samples */
+                    iml_color_add(&sum, &sum, &color);
+                }
+            }
+
+            /* Calculate average pixel color */
+            iml_color_scale(&sum, &sum, 1.0f/(float)i);
+            
+            /* Write pixel onto bitmap */
+            iml_bitmap_setpixel(res, (int32_t)x, (int32_t)y,
+                                iml_rgba(sum.r>=0.0f ? (sum.r<=255.0f ? sum.r : 255.0f) : 0.0f,
+                                         sum.g>=0.0f ? (sum.g<=255.0f ? sum.g : 255.0f) : 0.0f,
+                                         sum.b>=0.0f ? (sum.b<=255.0f ? sum.b : 255.0f) : 0.0f, 0));
         }
     }
 
