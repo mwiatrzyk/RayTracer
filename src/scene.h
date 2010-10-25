@@ -30,9 +30,9 @@ typedef struct _SCN_Vertex {
  @attr: ks: mirroring factor (0..1) 
  @attr: g: glitter factor (0..1) 
  @attr: ka: ambient light factor 
- @attr: kt: transparency factor (0..1) 
+ @attr: kt: ??? 
  @attr: eta: refractive index 
- @attr: kr: ??? */
+ @attr: kr: refraction factor (0..1) */
 typedef struct _SCN_Surface {
     IML_Color color;
     float kd, ks, g, ka;
