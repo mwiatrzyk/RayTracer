@@ -40,6 +40,14 @@ static inline float vec_vector_distance(SCN_Vertex *self, SCN_Vertex *v) {
     return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
+/* Changes direction of given vector. */
+static inline SCN_Vertex* vec_vector_inverse(SCN_Vertex *self, SCN_Vertex *v) {
+    self->x = -v->x;
+    self->y = -v->y;
+    self->z = -v->z;
+    return self;
+}
+
 /* Normalizes given vector "inplace". Returns `self`. */
 static inline SCN_Vertex* vec_vector_normalize(SCN_Vertex *self) {
     float len=sqrt(self->x*self->x + self->y*self->y + self->z*self->z);
