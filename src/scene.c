@@ -23,7 +23,7 @@ static char* scn_file_readline(FILE *self) {
         }
         if(i == len)
             continue;  // white chars only found
-        if(strstr(buffer, "//"))
+        if(strstr(buffer, "//") == buffer)
             continue;  //comment found
         return res;
     }
@@ -169,10 +169,10 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
 SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
     SCN_Scene *res=self;
     FILE *fd=NULL;
-    char *line=NULL;
-    int32_t scount=-1, i;
+    char *line=NULL, *pch;
+    int32_t scount=-1, i, j;
     float kd, ks, g, ka, R, G, B;
-    float kt, eta, kr;
+    float kt, eta, kr, tmp;
     
     fd = fopen(filename, "r");
     if(!fd) {
@@ -192,20 +192,46 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
                 goto cleanup;
             }
         } else {
-            if(i%2 == 0) {
-                sscanf(line, "%f %f %f %f %f %f %f", &kd, &ks, &g, &ka, &R, &G, &B);
-            } else {
-                sscanf(line, "%f %f %f", &kt, &eta, &kr);
-                self->s[i/2].kd = kd;
-                self->s[i/2].ks = ks;
-                self->s[i/2].g = g;
-                self->s[i/2].ka = ka;
-                self->s[i/2].color.r = R;
-                self->s[i/2].color.g = G;
-                self->s[i/2].color.b = B;
-                self->s[i/2].kt = kt;
-                self->s[i/2].eta = eta;
-                self->s[i/2].kr = kr;
+            printf("%s\n", line);
+            j = 0;
+            pch = strtok(line, " \t");
+            while(pch != NULL) {
+                sscanf(pch, "%f", &tmp);
+                pch = strtok(NULL, " \t");
+                switch(j) {
+                    case 0:
+                        self->s[i].kd = tmp;
+                        break;
+                    case 1:
+                        self->s[i].ks = tmp;
+                        break;
+                    case 2:
+                        self->s[i].g = tmp;
+                        break;
+                    case 3:
+                        self->s[i].ka = tmp;
+                        break;
+                    case 4:
+                        self->s[i].color.r = tmp;
+                        break;
+                    case 5:
+                        self->s[i].color.g = tmp;
+                        break;
+                    case 6:
+                        self->s[i].color.b = tmp;
+                        break;
+                    case 7: 
+                        self->s[i].kt = tmp;
+                        break;
+                    case 8:
+                        self->s[i].eta = tmp;
+                        break;
+                    case 9:
+                        self->s[i].kr = tmp;
+                        break;
+                }
+                if(++j >= 10)
+                    break;
             }
             i++;
         }
