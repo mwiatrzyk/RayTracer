@@ -125,21 +125,17 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
         vec_vector_raypoint(&onew, o, r, dmin);
         
         /* raytrace reflected ray */
-        if(nearest->s->ks > 0.0f) {
+        if(nearest->s->kr > 0.0f) {
             vec_vector_ray_reflected(&rray, &nearest->n, vec_vector_inverse(&tmpv, r));
-            rcolor = raytrace(t, maxt, nearest,
-                              l, maxl, 
-                              &onew, &rray, total_flux, level-1);
-            iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->ks));
+            rcolor = raytrace(t, maxt, nearest, l, maxl, &onew, &rray, total_flux, level-1);
+            iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kr));
         }
 
         /* raytrace refracted ray */
-        if(nearest->s->kr > 0.0f) {
+        if(nearest->s->kt > 0.0f) {
             vec_vector_ray_refracted(&rray, &nearest->n, vec_vector_inverse(&tmpv, r), nearest->s->eta);
-            rcolor = raytrace(t, maxt, nearest,
-                              l, maxl,
-                              &onew, &rray, total_flux, level-1);
-            iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kr));
+            rcolor = raytrace(t, maxt, nearest, l, maxl, &onew, &rray, total_flux, level-1);
+            iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kt));
         }
 
         /* calculate color at intersection point */
