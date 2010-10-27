@@ -96,7 +96,7 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
     IML_Color res={0.0f, 0.0f, 0.0f, 0.0f}, tmp, rcolor;
     SCN_Vertex onew, rnew, rray, tmpv;
     SCN_Triangle *nearest=NULL, *tt=t;
-    float d, dmin=FLT_MAX, df, rf, n_dot_lo;
+    float d, dmin=FLT_MAX, df, rf, n_dot_lo, dm;
     
     if(level == 0) {
         return res;
@@ -148,6 +148,7 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
             vec_vector_ray(&rnew, &onew, &l->p);
              
             if(!is_shadow(t, maxt, nearest, &onew, &rnew, &l->p)) {
+                dm = vec_vector_distance(&onew, &l->p);
                 n_dot_lo = vec_vector_dotp(&nearest->n, &rnew);
 
                 /* diffusion factor */
@@ -158,7 +159,7 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
 
                 /* calculate color */
                 iml_color_add(&tmp, &l->color, &nearest->s->color);
-                iml_color_scale(&tmp, &tmp, l->flux*(df+rf));
+                iml_color_scale(&tmp, &tmp, l->flux*(df+rf)/(dm+0.001f));
                 iml_color_add(&res, &res, &tmp);
             }
             l++;
