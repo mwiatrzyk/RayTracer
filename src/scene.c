@@ -192,7 +192,6 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
                 goto cleanup;
             }
         } else {
-            printf("%s\n", line);
             j = 0;
             pch = strtok(line, " \t");
             while(pch != NULL) {
