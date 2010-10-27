@@ -65,8 +65,6 @@ static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current,
     float d, dmax=vec_vector_distance(o, lpos);
     SCN_Vertex cl, ct;
     
-    //vec_vector_ray(&r, o, lpos);    // create ray vector pointing towards light
-    
     while(t < maxt) {
         if(t != current) {
             if(is_intersection(t, o, r, &d)) {
@@ -119,9 +117,6 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
         tt++;
     }
     
-    //if(level < 10) 
-    //    printf("%p\n", nearest);
-
     if(nearest) {
         /* Initialize result color with ambient color */
         iml_color_scale(&res, &nearest->s->color, nearest->s->ka * total_flux);
