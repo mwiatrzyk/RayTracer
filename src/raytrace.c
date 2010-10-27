@@ -196,7 +196,7 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
 IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
     IML_Color color;
     int i;
-    float x, y, dx, dy, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=0.5f;
+    float x, y, dx, dy, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=1.0f;
     SCN_Vertex *a=&camera->ul, *b=&camera->ur, *c=&camera->bl, *o=&camera->ob;
     IML_Bitmap *res=iml_bitmap_create(camera->sw, camera->sh, 0);
     
