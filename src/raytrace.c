@@ -64,8 +64,8 @@ static int is_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float 
  * to segments. Gives only `d` parameter (distance to intersection point). */
 static int is_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float *d, float *dmin) {
     float x, y;
-    float rdn = vec_vector_dotp(r, &t->n);
     SCN_ProjectionPlane pplane = t->pplane;
+    float rdn = vec_vector_dotp(r, &t->n);
     if(rdn > -EPSILON && rdn < EPSILON)
         return 0;
     *d = -(vec_vector_dotp(o, &t->n) + t->d) / rdn;
@@ -81,13 +81,13 @@ static int is_intersection(SCN_Triangle *t, SCN_Vertex *o, SCN_Vertex *r, float 
         x = o->z + (*d)*r->z;
         y = o->y + (*d)*r->y;
     }
-    if(t->ijA*x + t->ijB*y < -t->ijC) {
-        return 0;
-    } else if(t->jkA*x + t->jkB*y < -t->jkC) {
-        return 0;
-    } else if(t->ikA*x + t->ikB*y < -t->ikC) {
-        return 0;
-    }
+    if(x < t->minx) return 0;
+    if(x > t->maxx) return 0;
+    if(y < t->miny) return 0;
+    if(y > t->maxy) return 0;
+    if(t->ijA*x + t->ijB*y < -t->ijC) return 0;
+    if(t->jkA*x + t->jkB*y < -t->jkC) return 0;
+    if(t->ikA*x + t->ikB*y < -t->ikC) return 0;
     return 1;
 }
 
@@ -296,12 +296,25 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
         
         // project triangle onto coordinate system (one of XOY, XOZ, ZOY) that
         // won't cause reduction of triangle to segment
-        if(is_projection_possible(t, PP_XOY))
+        if(is_projection_possible(t, PP_XOY)) {
             t->pplane = PP_XOY;
-        else if(is_projection_possible(t, PP_XOZ))
+            t->minx = MIN(t->i->x, t->j->x, t->k->x);
+            t->miny = MIN(t->i->y, t->j->y, t->k->y);
+            t->maxx = MAX(t->i->x, t->j->x, t->k->x);
+            t->maxy = MAX(t->i->y, t->j->y, t->k->y);
+        } else if(is_projection_possible(t, PP_XOZ)) {
             t->pplane = PP_XOZ;
-        else
+            t->minx = MIN(t->i->x, t->j->x, t->k->x);
+            t->miny = MIN(t->i->z, t->j->z, t->k->z);
+            t->maxx = MAX(t->i->x, t->j->x, t->k->x);
+            t->maxy = MAX(t->i->z, t->j->z, t->k->z);
+        } else {
             t->pplane = PP_ZOY;
+            t->minx = MIN(t->i->z, t->j->z, t->k->z);
+            t->miny = MIN(t->i->y, t->j->y, t->k->y);
+            t->maxx = MAX(t->i->z, t->j->z, t->k->z);
+            t->maxy = MAX(t->i->y, t->j->y, t->k->y);
+        }
         calc_line_coefficients(t->i, t->j, t->k, t->pplane, &A, &B, &C);
         t->ijA = A; t->ijB = B; t->ijC = C;
         calc_line_coefficients(t->j, t->k, t->i, t->pplane, &A, &B, &C);
