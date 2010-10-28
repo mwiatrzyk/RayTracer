@@ -45,11 +45,19 @@ typedef struct _SCN_Surface {
  @attr: s: pointer to surface represented by this triangle */
 typedef struct _SCN_Triangle {
     SCN_Vertex *i, *j, *k;  //pointers to triangle's vertices
-    int32_t sid;  //surface index (used only to assign `s` pointer while loading surface description)
     SCN_Surface *s;  //pointer to surface description of this triangle
     /* speedup & helper attributes (initialized just before raytracing process) */
-    SCN_Vertex n;
-    SCN_Vertex ij, ik;
+    int32_t sid;  //surface index (used only to assign `s` pointer while loading surface description)
+    SCN_Vertex n;  // normal vector
+    SCN_Vertex ij, ik;  // vectors: i->j, i->k
+    #if INT_ALG == 2
+    float d;  // d coefficient of triangle's plane equation: (i dotp n) + d = 0
+    SCN_ProjectionPlane pplane;
+    float ijA, ijB, ijC; // ij line coefficients: Ax+By+C=0
+    float jkA, jkB, jkC; // jk line coefficients
+    float ikA, ikB, ikC; // ik line coefficients
+    float minx, maxx, miny, maxy;
+    #endif
 } SCN_Triangle;
 
 /* Definition of single light. 
