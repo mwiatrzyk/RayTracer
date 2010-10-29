@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "error.h"
+#include "vectormath.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +37,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
     char *pch;
     FILE *fd=NULL;
     char *line=NULL;
+    SCN_Vertex *v=NULL;
     SCN_Scene *res=NULL;
 
     fd=fopen(filename, "r");
@@ -55,9 +57,8 @@ SCN_Scene* scn_scene_load(const char *filename) {
             }
             memset(res, 0, sizeof(SCN_Scene));
             i = 0;
-            res->vsize = vcount;
-            res->v = malloc(vcount*sizeof(SCN_Vertex));  //create array of vertices
-            if (!res->v) {
+            v = malloc(vcount*sizeof(SCN_Vertex));  //create array of vertices
+            if (!v) {
                 free(res);  //unable to allocate memory for vertices - NULL must be returned
                 res = NULL;
                 errno = E_MEMORY;
@@ -66,7 +67,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
 
         /* reading vertices into array */
         } else if (vcount > 0) {
-            sscanf(line, "%f %f %f", &res->v[i].x, &res->v[i].y, &res->v[i].z);
+            sscanf(line, "%f %f %f", &v[i][0], &v[i][1], &v[i][2]);
             i++; vcount--;
 
         /* reading number of triangles */
@@ -76,7 +77,6 @@ SCN_Scene* scn_scene_load(const char *filename) {
             res->tsize = tcount;
             res->t = malloc(tcount*sizeof(SCN_Triangle));  //create array of triangles
             if (!res->t) {
-                free(res->v);  //res->v is allocated so it need to be freed before call to free(res)
                 free(res);
                 res = NULL;
                 errno = E_MEMORY;
@@ -86,9 +86,12 @@ SCN_Scene* scn_scene_load(const char *filename) {
         /* reading triangles into array */
         } else if (tcount > 0) {
             sscanf(line, "%d %d %d", &_i, &j, &k);
-            res->t[i].i = &res->v[_i];  //assign address of correct vertex
-            res->t[i].j = &res->v[j];
-            res->t[i].k = &res->v[k];
+            //res->t[i].i = v[_i];  //assign address of correct vertex
+            vec_vector_copy(v[_i], res->t[i].i);
+            //res->t[i].j = v[j];
+            vec_vector_copy(v[j], res->t[i].j);
+            //res->t[i].k = v[k];
+            vec_vector_copy(v[k], res->t[i].k);
             i++; tcount--;
         
         /* initialize pcount variable and read first line of part assignment */
@@ -117,8 +120,8 @@ SCN_Scene* scn_scene_load(const char *filename) {
     }
 
     cleanup:
-        if (fd)
-            fclose(fd);
+        if(v) free(v);
+        if(fd) fclose(fd);
 
     return res;
 }
@@ -151,7 +154,7 @@ SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
 
         /* get single light */
         } else {
-            sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].p.x, &self->l[i].p.y, &self->l[i].p.z, 
+            sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].p[0], &self->l[i].p[1], &self->l[i].p[2], 
                                                  &self->l[i].flux, 
                                                  &self->l[i].color.r, &self->l[i].color.g, &self->l[i].color.b);
             i++;
@@ -276,23 +279,23 @@ SCN_Camera* scn_camera_load(const char *filename) {
                 goto cleanup;
             }
             memset(res, 0, sizeof(SCN_Camera));
-            sscanf(line, "%f %f %f", &res->ob.x, &res->ob.y, &res->ob.z);
+            sscanf(line, "%f %f %f", &res->ob[0], &res->ob[1], &res->ob[2]);
             vp--;
         /* screen position */
         } else if(sc > 0) {
-            sscanf(line, "%f %f %f", &tmp.x, &tmp.y, &tmp.z);
+            sscanf(line, "%f %f %f", &tmp[0], &tmp[1], &tmp[2]);
             switch(sc) {
                 //upper left screen corner
                 case 3:
-                    res->ul = tmp;
+                    vec_vector_copy(tmp, res->ul);
                     break;
                 //bottom left screen corner
                 case 2:
-                    res->bl = tmp;
+                    vec_vector_copy(tmp, res->bl);
                     break;
                 //upper right screen corner
                 case 1:
-                    res->ur = tmp;
+                    vec_vector_copy(tmp, res->ur);
                     break;
             }
             sc--;
@@ -317,8 +320,6 @@ void scn_camera_destroy(SCN_Camera *self) {
 
 
 void scn_scene_destroy(SCN_Scene *self) {
-    if(self->v)
-        free(self->v);
     if(self->t)
         free(self->t);
     if(self->l)

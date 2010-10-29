@@ -5,6 +5,10 @@
 #include "imagelib.h"
 #include <stdio.h>
 
+//// TYPES ////////////////////////////////////////////////////
+
+typedef float SCN_Vertex[4];
+
 //// ENUMS ////////////////////////////////////////////////////
 
 typedef enum _SCN_ProjectionPlane {
@@ -14,13 +18,6 @@ typedef enum _SCN_ProjectionPlane {
 } SCN_ProjectionPlane;
 
 //// STRUCTURES ///////////////////////////////////////////////
-
-/* Definition of single vertex in 3D space. 
-
- @attr: x, y, z: vertex coordinates */
-typedef struct _SCN_Vertex {
-    float x, y, z;  //vertex coords
-} SCN_Vertex;
 
 /* Definition of surface. A surface is a group of triangles that have the same
  * properties. 
@@ -44,12 +41,12 @@ typedef struct _SCN_Surface {
  @attr: i, j, k: pointers to SCN_Vertex objects that create this triangle 
  @attr: s: pointer to surface represented by this triangle */
 typedef struct _SCN_Triangle {
-    SCN_Vertex *i, *j, *k;  //pointers to triangle's vertices
+    float i[4], j[4], k[4];  //triangle's vertices (x, y, z, w)
     SCN_Surface *s;  //pointer to surface description of this triangle
     /* speedup & helper attributes (initialized just before raytracing process) */
     int32_t sid;  //surface index (used only to assign `s` pointer while loading surface description)
-    SCN_Vertex n;  // normal vector
-    SCN_Vertex ij, ik;  // vectors: i->j, i->k
+    float n[4];  // normal vector
+    float ij[4], ik[4];  // vectors: i->j, i->k
     #if INT_ALG == 2
     float d;  // d coefficient of triangle's plane equation: (i dotp n) + d = 0
     SCN_ProjectionPlane pplane;
@@ -66,7 +63,7 @@ typedef struct _SCN_Triangle {
  @attr: p: total luminous flux 
  @attr: R, G, B: light color */
 typedef struct _SCN_Light {
-    SCN_Vertex p;
+    float p[4];
     float flux;
     IML_Color color;
 } SCN_Light;
@@ -80,11 +77,9 @@ typedef struct _SCN_Light {
  @attr: v: array of vertices 
  @attr: t: array of triangles */
 typedef struct _SCN_Scene {
-    int32_t vsize;   //number of vertices in scene
     int32_t tsize;   //number of triangles in scene
     int32_t lsize;  //number of lights
     int32_t ssize;  //number of surfaces
-    SCN_Vertex *v;   //array of vertices
     SCN_Triangle *t; //array of triangles
     SCN_Light *l;   //array of lights
     SCN_Surface *s;  //array of surfaces
@@ -99,10 +94,10 @@ typedef struct _SCN_Scene {
  @attr: ur_x, ur_y, ur_z: coordinates of screen's upper-right corner */
 typedef struct _SCN_Camera {
     /* observer location */
-    SCN_Vertex ob;
+    float ob[4];
     //float vx, vy, vz;
     /* screen location (in scene's space): ul - upper left, bl - bottom left, ur - upper right */
-    SCN_Vertex ul, bl, ur;
+    float ul[4], bl[4], ur[4];
     /* screen size (resolution) */
     int32_t sw, sh;
 } SCN_Camera;
