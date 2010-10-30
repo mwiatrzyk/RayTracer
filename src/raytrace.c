@@ -161,12 +161,28 @@ static void calc_line_coefficients(float *a, float *b, float *c,
 
 //// SHADOW TEST //////////////////////////////////////////////
 
-static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current, float *o, float *r, float *lpos) {
-    float d, dmax=vec_vector_distance(o, lpos), dmin=FLT_MAX;
-    float cl, ct;
+static int is_shadow(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *current, float *o, float *r, float *l) {
+    int i;
+    float d, dmax=vec_vector_distance(o, l), dmin=FLT_MAX;
+    float min[4];
+    float max[4];
+
+    for(i=0; i<3; i++) {
+        if(o[i] < l[i]) {
+            min[i]=o[i]; max[i]=l[i];
+        } else {
+            min[i]=l[i]; max[i]=o[i];
+        }
+    }
     
     while(t < maxt) {
         if(t != current) {
+            if(t->i[0]<min[0] && t->j[0]<min[0] && t->k[0]<min[0]) {t++; continue;}
+            if(t->i[0]>max[0] && t->j[0]>max[0] && t->k[0]>max[0]) {t++; continue;}
+            if(t->i[1]<min[1] && t->j[1]<min[1] && t->k[1]<min[0]) {t++; continue;}
+            if(t->i[1]>max[1] && t->j[1]>max[1] && t->k[1]>max[0]) {t++; continue;}
+            if(t->i[2]<min[2] && t->j[2]<min[2] && t->k[2]<min[0]) {t++; continue;}
+            if(t->i[2]>max[2] && t->j[2]>max[2] && t->k[2]>max[0]) {t++; continue;}
             if(is_intersection(t, o, r, &d, &dmin)) {
                 if(d < dmax) {
                     return 1;
