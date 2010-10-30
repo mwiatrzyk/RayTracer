@@ -7,6 +7,8 @@
 #define NULL (void*)0
 #endif
 
+#define __ALIGN_16 __attribute__((aligned(16)))
+
 typedef enum _bool {
     false = 0,
     true = 1
