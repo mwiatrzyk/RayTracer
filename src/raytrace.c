@@ -63,14 +63,17 @@ static int is_intersection(SCN_Triangle *t, float *o, float *r, float *d, float 
  * 3D triangles into 2D plane in a way that won't cause triangles to be reduced
  * to segments. Gives only `d` parameter (distance to intersection point). */
 static int is_intersection(SCN_Triangle *t, float *o, float *r, float *d, float *dmin) {
-    float x, y;
-    SCN_ProjectionPlane pplane = t->pplane;
+    #ifdef BENCHMARK
+    intersection_test_count++;
+    #endif
     float rdn = vec_vector_dotp(r, t->n);
-    if(rdn > -EPSILON && rdn < EPSILON)
+    if(rdn == 0.0f)
         return 0;
     *d = -(vec_vector_dotp(o, t->n) + t->d) / rdn;
     if(*d < 0.0f || *d > *dmin)
         return 0;
+    float x, y;
+    SCN_ProjectionPlane pplane = t->pplane;
     if(pplane == PP_XOY) {
         x = o[0] + (*d)*r[0];
         y = o[1] + (*d)*r[1];
@@ -229,9 +232,6 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
                 }
             }
         }
-        #ifdef BENCHMARK
-            intersection_test_count++;
-        #endif
         tt++;
     }
     
