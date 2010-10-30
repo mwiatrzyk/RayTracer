@@ -1,6 +1,7 @@
 #include <float.h>
 #include "raytrace.h"
 #include "vectormath.h"
+#include "rdtsc.h"
 
 #define EPSILON 0.000001f
 #define BENCHMARK
@@ -88,9 +89,35 @@ static int is_intersection(SCN_Triangle *t, float *o, float *r, float *d, float 
     if(x > t->maxx) return 0;
     if(y < t->miny) return 0;
     if(y > t->maxy) return 0;
+    //#ifndef __SSE__
     if(t->A[0]*x + t->B[0]*y < -t->C[0]) return 0;
     if(t->A[1]*x + t->B[1]*y < -t->C[1]) return 0;
     if(t->A[2]*x + t->B[2]*y < -t->C[2]) return 0;
+    /*#else
+    uint64_t start=rdtsc();
+    __ALIGN_16 float xx[4]={x, x, x, x}, yy[4]={y, y, y, y}, res[4];
+    __asm__ volatile(
+        "movaps (%1), %%xmm0 \n\t"
+        "movaps (%2), %%xmm1 \n\t"
+        "mulps %%xmm1, %%xmm0 \n\t"  // xmm0 = t->A * xx
+        "movaps (%3), %%xmm1 \n\t"
+        "movaps (%4), %%xmm2 \n\t"
+        "mulps %%xmm1, %%xmm2 \n\t"  // xmm2 = t->B * yy
+        "addps %%xmm2, %%xmm0 \n\t"  // xmm0 = xmm0 + xmm2 = t->A*xx + t->B*yy
+        "movaps %%xmm0, %0 \n\t"
+        : "=m"(res) 
+        : "r"(t->A), "r"(xx), "r"(t->B), "r"(yy)
+        : "%xmm0", "%xmm1", "%xmm2"
+    );
+    //if(res[1] != t->A[1]*x + t->B[1]*y)
+    //printf("%f %f %f\n", x, res[1], t->A[1]*x + t->B[1]*y);
+    //printf("%f %f\n", res[1], t->A[1]*x + t->B[1]*y);
+    //printf("%f %f\n\n", res[2], t->A[2]*x + t->B[2]*y);
+    if(res[0] < -t->C[0]) return 0;
+    if(res[1] < -t->C[1]) return 0;
+    if(res[2] < -t->C[2]) return 0;
+    printf("%lld\n", rdtsc()-start);
+    #endif*/
     return 1;
 }
 
