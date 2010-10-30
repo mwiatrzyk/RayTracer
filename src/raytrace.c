@@ -85,9 +85,9 @@ static int is_intersection(SCN_Triangle *t, float *o, float *r, float *d, float 
     if(x > t->maxx) return 0;
     if(y < t->miny) return 0;
     if(y > t->maxy) return 0;
-    if(t->ijA*x + t->ijB*y < -t->ijC) return 0;
-    if(t->jkA*x + t->jkB*y < -t->jkC) return 0;
-    if(t->ikA*x + t->ikB*y < -t->ikC) return 0;
+    if(t->A[0]*x + t->B[0]*y < -t->C[0]) return 0;
+    if(t->A[1]*x + t->B[1]*y < -t->C[1]) return 0;
+    if(t->A[2]*x + t->B[2]*y < -t->C[2]) return 0;
     return 1;
 }
 
@@ -315,12 +315,9 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
             t->maxx = MAX(t->i[2], t->j[2], t->k[2]);
             t->maxy = MAX(t->i[1], t->j[1], t->k[1]);
         }
-        calc_line_coefficients(t->i, t->j, t->k, t->pplane, &A, &B, &C);
-        t->ijA = A; t->ijB = B; t->ijC = C;
-        calc_line_coefficients(t->j, t->k, t->i, t->pplane, &A, &B, &C);
-        t->jkA = A; t->jkB = B; t->jkC = C;
-        calc_line_coefficients(t->i, t->k, t->j, t->pplane, &A, &B, &C);
-        t->ikA = A; t->ikB = B; t->ikC = C;
+        calc_line_coefficients(t->i, t->j, t->k, t->pplane, &t->A[0], &t->B[0], &t->C[0]);
+        calc_line_coefficients(t->j, t->k, t->i, t->pplane, &t->A[1], &t->B[1], &t->C[1]);
+        calc_line_coefficients(t->i, t->k, t->j, t->pplane, &t->A[2], &t->B[2], &t->C[2]);
         #endif
 
         t++;

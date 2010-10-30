@@ -50,9 +50,13 @@ typedef struct _SCN_Triangle {
     #if INT_ALG == 2
     float d;  // d coefficient of triangle's plane equation: (i dotp n) + d = 0
     SCN_ProjectionPlane pplane;
-    float ijA, ijB, ijC; // ij line coefficients: Ax+By+C=0
-    float jkA, jkB, jkC; // jk line coefficients
-    float ikA, ikB, ikC; // ik line coefficients
+    #ifdef __SSE__
+    __ALIGN_16
+    #endif
+    float A[4], B[4], C[4];
+    //float ijA, ijB, ijC; // ij line coefficients: Ax+By+C=0
+    //float jkA, jkB, jkC; // jk line coefficients
+    //float ikA, ikB, ikC; // ik line coefficients
     float minx, maxx, miny, maxy;
     #endif
 } SCN_Triangle;
