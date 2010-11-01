@@ -1,7 +1,8 @@
+*.swo
 *.bmp
 *.swp
 *.vim
 raytrace
 scenes/
-src/obj/
+obj/
 
