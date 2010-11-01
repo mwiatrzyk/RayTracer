@@ -7,7 +7,7 @@
 
 //// TYPES ////////////////////////////////////////////////////
 
-typedef float SCN_Vertex[4];
+typedef float SCN_Vertex4f[4];
 
 //// ENUMS ////////////////////////////////////////////////////
 
@@ -38,15 +38,15 @@ typedef struct _SCN_Surface {
 
 /* Definition of triangle. 
 
- @attr: i, j, k: pointers to SCN_Vertex objects that create this triangle 
+ @attr: i, j, k: pointers to SCN_Vertex4f objects that create this triangle 
  @attr: s: pointer to surface represented by this triangle */
 typedef struct _SCN_Triangle {
-    float i[4], j[4], k[4];  //triangle's vertices (x, y, z, w)
+    SCN_Vertex4f i, j, k;  //triangle's vertices (x, y, z, w)
     SCN_Surface *s;  //pointer to surface description of this triangle
     /* speedup & helper attributes (initialized just before raytracing process) */
     int32_t sid;  //surface index (used only to assign `s` pointer while loading surface description)
-    float n[4];  // normal vector
-    float ij[4], ik[4];  // vectors: i->j, i->k
+    SCN_Vertex4f n;  // normal vector
+    SCN_Vertex4f ij, ik;  // vectors: i->j, i->k
     #if INT_ALG == 2
     float d;  // d coefficient of triangle's plane equation: (i dotp n) + d = 0
     SCN_ProjectionPlane pplane;
@@ -54,9 +54,6 @@ typedef struct _SCN_Triangle {
     __ALIGN_16
     #endif
     float A[4], B[4], C[4];
-    //float ijA, ijB, ijC; // ij line coefficients: Ax+By+C=0
-    //float jkA, jkB, jkC; // jk line coefficients
-    //float ikA, ikB, ikC; // ik line coefficients
     float minx, maxx, miny, maxy;
     #endif
 } SCN_Triangle;
@@ -98,10 +95,10 @@ typedef struct _SCN_Scene {
  @attr: ur_x, ur_y, ur_z: coordinates of screen's upper-right corner */
 typedef struct _SCN_Camera {
     /* observer location */
-    float ob[4];
+    SCN_Vertex4f ob;
     //float vx, vy, vz;
     /* screen location (in scene's space): ul - upper left, bl - bottom left, ur - upper right */
-    float ul[4], bl[4], ur[4];
+    SCN_Vertex4f ul, bl, ur;
     /* screen size (resolution) */
     int32_t sw, sh;
 } SCN_Camera;

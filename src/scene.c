@@ -37,7 +37,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
     char *pch;
     FILE *fd=NULL;
     char *line=NULL;
-    SCN_Vertex *v=NULL;
+    SCN_Vertex4f *v=NULL;
     SCN_Scene *res=NULL;
 
     fd=fopen(filename, "r");
@@ -57,7 +57,7 @@ SCN_Scene* scn_scene_load(const char *filename) {
             }
             memset(res, 0, sizeof(SCN_Scene));
             i = 0;
-            v = malloc(vcount*sizeof(SCN_Vertex));  //create array of vertices
+            v = malloc(vcount*sizeof(SCN_Vertex4f));  //create array of vertices
             if (!v) {
                 free(res);  //unable to allocate memory for vertices - NULL must be returned
                 res = NULL;
@@ -182,7 +182,7 @@ SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
         errno = E_IO;
         goto cleanup;
     }
-
+    
     while((line=scn_file_readline(fd)) != NULL) {
         if(scount == -1) {
             sscanf(line, "%d", &scount);
@@ -262,7 +262,7 @@ SCN_Camera* scn_camera_load(const char *filename) {
     SCN_Camera *res=NULL;
     char *line=NULL;
     int16_t vp=1, sc=3, sr=1;
-    SCN_Vertex tmp;
+    SCN_Vertex4f tmp;
 
     fd=fopen(filename, "r");
     if (!fd) {

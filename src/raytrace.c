@@ -242,7 +242,7 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
                           float total_flux, uint32_t level) 
 {
     IML_Color res={0.0f, 0.0f, 0.0f, 0.0f}, tmp, rcolor;
-    float onew[4], rnew[4], rray[4], tmpv[4];
+    SCN_Vertex4f onew, rnew, rray, tmpv;
     SCN_Triangle *nearest=NULL, *tt=t;
     float d, dmin=FLT_MAX, df, rf, n_dot_lo, dm;
     
@@ -318,7 +318,7 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
     float A, B, C;
     #endif
     SCN_Triangle *t=scene->t, *maxt=(SCN_Triangle*)(scene->t + scene->tsize);
-    float ij[4], ik[4], io[4], n[4];
+    SCN_Vertex4f io;
     while(t < maxt) {
         // calculate vectors used to calculate normal
         vec_vector_make(t->ij, t->i, t->j);
@@ -387,7 +387,7 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
     preprocess_scene(scene, camera);
 
     #ifdef BENCHMARK
-        clock_t start = clock();
+    clock_t start = clock();
     #endif
     
     // calculate total flux of all lights
@@ -437,8 +437,8 @@ IML_Bitmap* rtr_execute(SCN_Scene *scene, SCN_Camera *camera) {
     }
 
     #ifdef BENCHMARK
-        double total_time = (double)(clock()-start)/CLOCKS_PER_SEC;
-        printf("Intersection tests per second: %lu\n", (uint32_t)(intersection_test_count/total_time));
+    double total_time = (double)(clock()-start)/CLOCKS_PER_SEC;
+    printf("Intersection tests per second: %lu\n", (uint32_t)(intersection_test_count/total_time));
     #endif
     
     return res;
