@@ -54,6 +54,9 @@ static int is_intersection(SCN_Triangle *t, float *o, float *r, float *d, float 
 
     return 1;
 }
+
+/* Precalculates coefficients used by intersection test algorithm. */
+static void precalc_intersection_coeffs(SCN_Triangle *t) {}
 #endif  //INT_ALG == 1
 
 
@@ -186,6 +189,38 @@ static void calc_line_coefficients(float *a, float *b, float *c,
         *C = -(*C);
     }
 }
+
+
+/* Precalculates coefficients used by intersection test algorithm. */
+static void precalc_intersection_coeffs(SCN_Triangle *t) {
+    // calculate d coefficient of plane equation
+    t->d = -vec_vector_dotp(t->i, t->n);
+    
+    // project triangle onto coordinate system (one of XOY, XOZ, ZOY) that
+    // won't cause reduction of triangle to segment
+    if(is_projection_possible(t, PP_XOY)) {
+        t->pplane = PP_XOY;
+        t->minx = MIN(t->i[0], t->j[0], t->k[0]);
+        t->miny = MIN(t->i[1], t->j[1], t->k[1]);
+        t->maxx = MAX(t->i[0], t->j[0], t->k[0]);
+        t->maxy = MAX(t->i[1], t->j[1], t->k[1]);
+    } else if(is_projection_possible(t, PP_XOZ)) {
+        t->pplane = PP_XOZ;
+        t->minx = MIN(t->i[0], t->j[0], t->k[0]);
+        t->miny = MIN(t->i[2], t->j[2], t->k[2]);
+        t->maxx = MAX(t->i[0], t->j[0], t->k[0]);
+        t->maxy = MAX(t->i[2], t->j[2], t->k[2]);
+    } else {
+        t->pplane = PP_ZOY;
+        t->minx = MIN(t->i[2], t->j[2], t->k[2]);
+        t->miny = MIN(t->i[1], t->j[1], t->k[1]);
+        t->maxx = MAX(t->i[2], t->j[2], t->k[2]);
+        t->maxy = MAX(t->i[1], t->j[1], t->k[1]);
+    }
+    calc_line_coefficients(t->i, t->j, t->k, t->pplane, &t->A[0], &t->B[0], &t->C[0]);
+    calc_line_coefficients(t->j, t->k, t->i, t->pplane, &t->A[1], &t->B[1], &t->C[1]);
+    calc_line_coefficients(t->i, t->k, t->j, t->pplane, &t->A[2], &t->B[2], &t->C[2]);
+}
 #endif  //INT_ALG == 2
 
 
@@ -314,9 +349,6 @@ static IML_Color raytrace(SCN_Triangle *t, SCN_Triangle *maxt, SCN_Triangle *ski
 /* Performs scene preprocessing. Calculates all constant coefficients for each
  * triangle in scene. */
 static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
-    #if INT_ALG == 2
-    float A, B, C;
-    #endif
     SCN_Triangle *t=scene->t, *maxt=(SCN_Triangle*)(scene->t + scene->tsize);
     SCN_Vertex4f io;
     while(t < maxt) {
@@ -333,35 +365,8 @@ static SCN_Scene* preprocess_scene(SCN_Scene *scene, SCN_Camera *camera) {
             vec_vector_inverse(t->n, t->n);
         }
 
-        #if INT_ALG == 2
-        // calculate d coefficient of plane equation
-        t->d = -vec_vector_dotp(t->i, t->n);
-        
-        // project triangle onto coordinate system (one of XOY, XOZ, ZOY) that
-        // won't cause reduction of triangle to segment
-        if(is_projection_possible(t, PP_XOY)) {
-            t->pplane = PP_XOY;
-            t->minx = MIN(t->i[0], t->j[0], t->k[0]);
-            t->miny = MIN(t->i[1], t->j[1], t->k[1]);
-            t->maxx = MAX(t->i[0], t->j[0], t->k[0]);
-            t->maxy = MAX(t->i[1], t->j[1], t->k[1]);
-        } else if(is_projection_possible(t, PP_XOZ)) {
-            t->pplane = PP_XOZ;
-            t->minx = MIN(t->i[0], t->j[0], t->k[0]);
-            t->miny = MIN(t->i[2], t->j[2], t->k[2]);
-            t->maxx = MAX(t->i[0], t->j[0], t->k[0]);
-            t->maxy = MAX(t->i[2], t->j[2], t->k[2]);
-        } else {
-            t->pplane = PP_ZOY;
-            t->minx = MIN(t->i[2], t->j[2], t->k[2]);
-            t->miny = MIN(t->i[1], t->j[1], t->k[1]);
-            t->maxx = MAX(t->i[2], t->j[2], t->k[2]);
-            t->maxy = MAX(t->i[1], t->j[1], t->k[1]);
-        }
-        calc_line_coefficients(t->i, t->j, t->k, t->pplane, &t->A[0], &t->B[0], &t->C[0]);
-        calc_line_coefficients(t->j, t->k, t->i, t->pplane, &t->A[1], &t->B[1], &t->C[1]);
-        calc_line_coefficients(t->i, t->k, t->j, t->pplane, &t->A[2], &t->B[2], &t->C[2]);
-        #endif
+        // calculate coefficients of intersection test algorithm
+        precalc_intersection_coeffs(t);
 
         t++;
     }
