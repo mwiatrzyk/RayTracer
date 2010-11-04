@@ -272,12 +272,12 @@ static int is_shadow(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *current, fl
    @param: maxl: pointer to first element beyond light array
    @param: o: ray origin point
    @param: r: ray vector (normalized) */
-static IML_Color raytrace(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *skip, 
+static RT_Color raytrace(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *skip, 
     RT_Light *l, RT_Light *maxl, 
     float *o, float *r, 
     float total_flux, uint32_t level) 
 {
-  IML_Color res={0.0f, 0.0f, 0.0f, 0.0f}, tmp, rcolor;
+  RT_Color res={0.0f, 0.0f, 0.0f, 0.0f}, tmp, rcolor;
   RT_Vertex4f onew, rnew, rray, tmpv;
   RT_Triangle *nearest=NULL, *tt=t;
   float d, dmin=FLT_MAX, df, rf, n_dot_lo, dm;
@@ -382,12 +382,12 @@ static RT_Scene* preprocess_scene(RT_Scene *scene, RT_Camera *camera) {
 
  @param: scene: pointer to scene object
  @param: camera: pointer to camera object */
-IML_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera) {
-  IML_Color color;
+RT_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera) {
+  RT_Color color;
   int i;
   float x, y, dx, dy, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=1.0f;
   float *a=camera->ul, *b=camera->ur, *c=camera->bl, *o=camera->ob;
-  IML_Bitmap *res=iml_bitmap_create(camera->sw, camera->sh, 0);
+  RT_Bitmap *res = rtBitmapCreate(camera->sw, camera->sh, 0);
 
   // preprocess scene (calculate all needed coefficients etc.)
   preprocess_scene(scene, camera);
@@ -404,7 +404,7 @@ IML_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera) {
   // main loop
   for(y=0.0f; y<h; y+=1.0f) {
     for(x=0.0f; x<w; x+=1.0f) {
-      IML_Color sum={0.0f, 0.0f, 0.0f, 0.0f};
+      RT_Color sum={0.0f, 0.0f, 0.0f, 0.0f};
 
       for(i=0, dy=0.0f; dy<1.0f; dy+=samples) {
         for(dx=0.0f; dx<1.0f; dx+=samples, i++) {
@@ -435,10 +435,10 @@ IML_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera) {
       iml_color_scale(&sum, &sum, 1.0f/(float)i);
 
       /* Write pixel onto bitmap */
-      iml_bitmap_setpixel(res, (int32_t)x, (int32_t)y,
-          iml_rgba(sum.r>=0.0f ? (sum.r<=255.0f ? sum.r : 255.0f) : 0.0f,
-            sum.g>=0.0f ? (sum.g<=255.0f ? sum.g : 255.0f) : 0.0f,
-            sum.b>=0.0f ? (sum.b<=255.0f ? sum.b : 255.0f) : 0.0f, 0));
+      rtBitmapSetPixel(res, (int32_t)x, (int32_t)y,
+          rtColorBuildRGBA(sum.r>=0.0f ? (sum.r<=255.0f ? sum.r : 255.0f) : 0.0f,
+                           sum.g>=0.0f ? (sum.g<=255.0f ? sum.g : 255.0f) : 0.0f,
+                           sum.b>=0.0f ? (sum.b<=255.0f ? sum.b : 255.0f) : 0.0f, 0));
     }
   }
 

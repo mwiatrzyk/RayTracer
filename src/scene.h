@@ -24,7 +24,7 @@ typedef enum _RT_ProjectionPlane {
 
 /* Definition of surface properties. */
 typedef struct _RT_Surface {
-  IML_Color color;      // surface RGB color
+  RT_Color color;      // surface RGB color
   float kd, ks, g, ka;  // kd - diffusion factor, ks - specular factor, g - glitter factor, ka - ambient factor
   float kt, eta, kr;    // kt - refraction (transparency) factor, eta - refraction index, kr -reflection factor
 } RT_Surface;
@@ -51,7 +51,7 @@ typedef struct _RT_Triangle {
 typedef struct _RT_Light {
   RT_Vertex4f p;    // light position
   float flux;       // total flux
-  IML_Color color;  // RGB color
+  RT_Color color;  // RGB color
 } RT_Light;
 
 

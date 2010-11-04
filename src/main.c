@@ -127,13 +127,13 @@ int main(int argc, char* argv[]) {
   // execute raytrace process
   printf("INFO: ray-tracing...\n");
   clock_t start = clock();
-  IML_Bitmap *bmp=rtr_execute(scene, cam);
+  RT_Bitmap *bmp=rtr_execute(scene, cam);
   printf("INFO: ...done. Time taken: %f seconds\n", (double)(clock()-start)/CLOCKS_PER_SEC);
 
   // save result bitmap
   printf("INFO: creating result image: %s\n", o);
-  iml_bitmap_save(bmp, o, 24);
-  iml_bitmap_destroy(bmp);
+  rtBitmapSave(bmp, o, 24);
+  rtBitmapDestroy(bmp);
   if(errno>0) {
     printf("ERROR: problem while creating result image: %s\n", rtGetErrorDesc());
     goto garbage_collect;
