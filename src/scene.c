@@ -1,3 +1,4 @@
+// vim: tabstop=2 shiftwidth=2 softtabstop=2
 #include "scene.h"
 #include "error.h"
 #include "vectormath.h"
@@ -9,322 +10,395 @@
 /* Helper function for reading lines from scene files. Sequential calls to this
  * function will return pointer to next line in file filtered from whitechars
  * and comments.
- 
- @param: self: pointer to FILE object */
-static char* scn_file_readline(FILE *self) {
-    static char buffer[1024];
-    int32_t i, len;
-    char *res=NULL, c;
-    while((res=fgets(buffer, 1024, self)) != NULL) {
-        len = strlen(buffer);
-        for(i=0; i<len; i++) {
-            c = buffer[i];
-            if(c!=' ' && c!='\t' && c!='\n' && c!='\r')
-                break;  //other character than white one
-        }
-        if(i == len)
-            continue;  // white chars only found
-        if(strstr(buffer, "//") == buffer)
-            continue;  //comment found
-        return res;
+
+:param: self: pointer to FILE object */
+static char* rtReadline(FILE *self) {
+  static char buffer[1024];
+  int32_t i, len;
+  char *res=NULL, c;
+  while((res=fgets(buffer, 1024, self)) != NULL) {
+    len = strlen(buffer);
+    for(i=0; i<len; i++) {
+      c = buffer[i];
+      if(c!=' ' && c!='\t' && c!='\n' && c!='\r')
+        break;  //other character than white one
     }
-    return NULL;
-}
-
-
-SCN_Scene* scn_scene_load(const char *filename) {
-    int32_t i, _i, j, k, vcount=-1, tcount=-1, pcount=-1;
-    char *pch;
-    FILE *fd=NULL;
-    char *line=NULL;
-    SCN_Vertex4f *v=NULL;
-    SCN_Scene *res=NULL;
-
-    fd=fopen(filename, "r");
-    if (!fd) {
-        errno = E_IO;
-        goto cleanup;
-    }
-    
-    while((line=scn_file_readline(fd)) != NULL) {
-        /* reading number of vertices */
-        if(vcount == -1) {
-            sscanf(line, "%d", &vcount);  //read number of vertices
-            res = malloc(sizeof(SCN_Scene));  //create SCN_Scene object
-            if (!res) {
-                errno = E_MEMORY;
-                goto cleanup;
-            }
-            memset(res, 0, sizeof(SCN_Scene));
-            i = 0;
-            v = malloc(vcount*sizeof(SCN_Vertex4f));  //create array of vertices
-            if (!v) {
-                free(res);  //unable to allocate memory for vertices - NULL must be returned
-                res = NULL;
-                errno = E_MEMORY;
-                goto cleanup;
-            }
-
-        /* reading vertices into array */
-        } else if (vcount > 0) {
-            sscanf(line, "%f %f %f", &v[i][0], &v[i][1], &v[i][2]);
-            i++; vcount--;
-
-        /* reading number of triangles */
-        } else if (tcount == -1) {
-            sscanf(line, "%d", &tcount);
-            i = 0;
-            res->tsize = tcount;
-            res->t = malloc(tcount*sizeof(SCN_Triangle));  //create array of triangles
-            if (!res->t) {
-                free(res);
-                res = NULL;
-                errno = E_MEMORY;
-                goto cleanup;
-            }
-
-        /* reading triangles into array */
-        } else if (tcount > 0) {
-            sscanf(line, "%d %d %d", &_i, &j, &k);
-            //res->t[i].i = v[_i];  //assign address of correct vertex
-            vec_vector_copy(v[_i], res->t[i].i);
-            //res->t[i].j = v[j];
-            vec_vector_copy(v[j], res->t[i].j);
-            //res->t[i].k = v[k];
-            vec_vector_copy(v[k], res->t[i].k);
-            i++; tcount--;
-        
-        /* initialize pcount variable and read first line of part assignment */
-        } else if (pcount == -1) {
-            i = 0;
-            pcount = res->tsize;
-            pch = strtok(line, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
-            while(pch != NULL) {
-                sscanf(pch, "%d", &_i);
-                res->t[i].sid = _i;
-                res->t[i].s = NULL;
-                pch = strtok(NULL, " \t\n\r");
-                i++; pcount--;
-            }
-        /* reading part assignment of triangles */
-        } else if (pcount > 0) {
-            pch = strtok(line, " \t\n\r");  //FIXME: use another function here (strtok is not recommended)
-            while(pch != NULL) {
-                sscanf(pch, "%d", &_i);
-                res->t[i].sid = _i;
-                res->t[i].s = NULL;
-                pch = strtok(NULL, " \t\n\r");
-                i++; pcount--;
-            }
-        }
-    }
-
-    cleanup:
-        if(v) free(v);
-        if(fd) fclose(fd);
-
+    if(i == len)
+      continue;  // white chars only found
+    if(strstr(buffer, "//") == buffer)
+      continue;  //comment found
     return res;
+  }
+  return NULL;
 }
 
 
-SCN_Scene* scn_scene_load_lights(SCN_Scene* self, const char *filename) {
-    int32_t i, lcount=-1;
-    FILE *fd=NULL;
-    char *line=NULL;
-    SCN_Scene *res=self;
+///////////////////////////////////////////////////////////////
+RT_Scene* rtSceneLoad(const char *filename) {
+  int32_t i=0, _i, j, k, vcount=-1, tcount=-1, pcount=-1;
+  char *pch;
+  FILE *fd=NULL;
+  char *line=NULL;
+  RT_Vertex4f *v=NULL;
+  RT_Scene *res=NULL;
 
-    fd=fopen(filename, "r");
-    if (!fd) {
-        errno = E_IO;
+  fd=fopen(filename, "r");
+  if (!fd) {
+    errno = E_IO;
+    goto cleanup;
+  }
+
+  while((line=rtReadline(fd)) != NULL) {
+    /*---------------------------
+      vertices reading startup
+     ----------------------------*/
+    if(vcount == -1) {
+      sscanf(line, "%d", &vcount);
+
+      // create RT_Scene object
+      res = malloc(sizeof(RT_Scene));
+      if (!res) {
+        errno = E_MEMORY;
         goto cleanup;
-    }
-    
-    while((line=scn_file_readline(fd)) != NULL) {
-        /* get number of lights */
-        if (lcount == -1) {
-            sscanf(line, "%d", &lcount);  //read number of lights
-            i = 0;
-            self->lsize = lcount;
-            self->l = malloc(lcount*sizeof(SCN_Light));
-            if (!self->l) {
-                errno = E_MEMORY;
-                res = NULL;  //return NULL to notify error (please note that original object is not destroyed)
-                goto cleanup;
-            }
+      }
+      memset(res, 0, sizeof(RT_Scene));
 
-        /* get single light */
-        } else {
-            sscanf(line, "%f %f %f %f %f %f %f", &self->l[i].p[0], &self->l[i].p[1], &self->l[i].p[2], 
-                                                 &self->l[i].flux, 
-                                                 &self->l[i].color.r, &self->l[i].color.g, &self->l[i].color.b);
-            i++;
-        }
-    }
-
-    cleanup:
-        if(fd)
-            fclose(fd);
-
-    return res;
-}
-
-
-SCN_Scene* scn_scene_load_surface(SCN_Scene* self, const char *filename) {
-    SCN_Scene *res=self;
-    FILE *fd=NULL;
-    char *line=NULL, *pch;
-    int32_t scount=-1, i, j;
-    float kd, ks, g, ka, R, G, B;
-    float kt, eta, kr, tmp;
-    
-    fd = fopen(filename, "r");
-    if(!fd) {
-        errno = E_IO;
+      // create placeholder for vertices
+      v = malloc(vcount*sizeof(RT_Vertex4f));
+      if (!v) {
+        rtSceneDestroy(&res);
+        errno = E_MEMORY;
         goto cleanup;
-    }
-    
-    while((line=scn_file_readline(fd)) != NULL) {
-        if(scount == -1) {
-            sscanf(line, "%d", &scount);
-            i = 0;
-            self->ssize = scount;
-            self->s = malloc(scount*sizeof(SCN_Surface));
-            if(!self->s) {
-                errno = E_MEMORY;
-                res = NULL;
-                goto cleanup;
-            }
-        } else {
-            j = 0;
-            pch = strtok(line, " \t");
-            while(pch != NULL) {
-                sscanf(pch, "%f", &tmp);
-                pch = strtok(NULL, " \t");
-                switch(j) {
-                    case 0:
-                        self->s[i].kd = tmp;
-                        break;
-                    case 1:
-                        self->s[i].ks = tmp;
-                        break;
-                    case 2:
-                        self->s[i].g = tmp;
-                        break;
-                    case 3:
-                        self->s[i].ka = tmp;
-                        break;
-                    case 4:
-                        self->s[i].color.r = tmp;
-                        break;
-                    case 5:
-                        self->s[i].color.g = tmp;
-                        break;
-                    case 6:
-                        self->s[i].color.b = tmp;
-                        break;
-                    case 7: 
-                        self->s[i].kt = tmp;
-                        break;
-                    case 8:
-                        self->s[i].eta = tmp;
-                        break;
-                    case 9:
-                        self->s[i].kr = tmp;
-                        break;
-                }
-                if(++j >= 10)
-                    break;
-            }
-            i++;
-        }
-    }
+      }
 
-    //update pointer to surface for each triangle
-    for(i=0; i<self->tsize; i++) {
-        if(self->t[i].sid >= self->ssize) {  //need more surface data
-            errno = E_NOT_ENOUGH_SURFACES;
-            res = NULL;
-            goto cleanup;
-        }
-        self->t[i].s = &self->s[self->t[i].sid];
-    }
+      // initialize variables
+      i = 0;
 
-    cleanup:
-        if(fd)
-            fclose(fd);
-    
-    return res;
-}
+    /*----------------------------
+      reading vertices into array
+     -----------------------------*/
+    } else if (vcount > 0) {
+      sscanf(line, "%f %f %f", &v[i][0], &v[i][1], &v[i][2]);
+      i++; vcount--;
 
-
-SCN_Camera* scn_camera_load(const char *filename) {
-    FILE *fd=NULL;
-    SCN_Camera *res=NULL;
-    char *line=NULL;
-    int16_t vp=1, sc=3, sr=1;
-    SCN_Vertex4f tmp;
-
-    fd=fopen(filename, "r");
-    if (!fd) {
-        errno = E_IO;
+    /*----------------------------
+      triangles reading startup
+     -----------------------------*/
+    } else if (tcount == -1) {
+      sscanf(line, "%d", &tcount);
+      
+      // create array of triangles
+      res->nt = tcount;
+      res->t = malloc(tcount*sizeof(RT_Triangle));
+      if (!res->t) {
+        rtSceneDestroy(&res);
+        errno = E_MEMORY;
         goto cleanup;
-    }
+      }
+      
+      // initialize variables
+      i = 0;
 
-    while((line=scn_file_readline(fd)) != NULL) {
-        /* viewpoint position */
-        if(vp > 0) {
-            res = malloc(sizeof(SCN_Camera));
-            if(!res) {
-                errno = E_MEMORY;
-                goto cleanup;
-            }
-            memset(res, 0, sizeof(SCN_Camera));
-            sscanf(line, "%f %f %f", &res->ob[0], &res->ob[1], &res->ob[2]);
-            vp--;
-        /* screen position */
-        } else if(sc > 0) {
-            sscanf(line, "%f %f %f", &tmp[0], &tmp[1], &tmp[2]);
-            switch(sc) {
-                //upper left screen corner
-                case 3:
-                    vec_vector_copy(tmp, res->ul);
-                    break;
-                //bottom left screen corner
-                case 2:
-                    vec_vector_copy(tmp, res->bl);
-                    break;
-                //upper right screen corner
-                case 1:
-                    vec_vector_copy(tmp, res->ur);
-                    break;
-            }
-            sc--;
-        /* screen resolution */
-        } else if(sr > 0) {
-            sscanf(line, "%d %d", &res->sw, &res->sh);
-            sr--;
+    /*-----------------------------
+      reading triangles into array
+     ------------------------------*/
+    } else if (tcount > 0) {
+      sscanf(line, "%d %d %d", &_i, &j, &k);
+
+      vec_vector_copy(v[_i], res->t[i].i);
+      vec_vector_copy(v[j], res->t[i].j);
+      vec_vector_copy(v[k], res->t[i].k);
+
+      i++; tcount--;
+
+    /*-----------------------------------
+      surface assignment reading startup 
+     ------------------------------------*/
+    } else if (pcount == -1) {
+      i = 0;
+      pcount = res->nt;
+      pch = strtok(line, " \t\n\r");
+      while(pch != NULL) {
+        sscanf(pch, "%d", &_i);
+        res->t[i].sid = _i;
+        res->t[i].s = NULL;
+        pch = strtok(NULL, " \t\n\r");
+        i++; pcount--;
+      }
+
+    /*-------------------------------------
+      reading part assignment of triangles
+     --------------------------------------*/
+    } else if (pcount > 0) {
+      pch = strtok(line, " \t\n\r");
+      while(pch != NULL) {
+        sscanf(pch, "%d", &_i);
+        res->t[i].sid = _i;
+        res->t[i].s = NULL;
+        pch = strtok(NULL, " \t\n\r");
+        i++; pcount--;
+      }
+    }
+  }
+
+cleanup:
+  if(v) free(v);
+  if(fd) fclose(fd);
+
+  return res;
+}
+
+
+///////////////////////////////////////////////////////////////
+RT_Scene* rtSceneSetSurfaces(RT_Scene* self, RT_Surface* s, uint32_t ns) {
+  int32_t i;
+
+  self->ns = ns;
+  self->s = s;
+
+  //update pointer to surface for each triangle
+  for(i=0; i<self->nt; i++) {
+    // check if number of surfaces is sufficient
+    if(self->t[i].sid >= ns) {
+      errno = E_NOT_ENOUGH_SURFACES;
+      return NULL;
+    }
+    // assign surface address to triangle
+    self->t[i].s = &s[self->t[i].sid];
+  }
+
+  return self;
+}
+
+
+///////////////////////////////////////////////////////////////
+void rtSceneDestroy(RT_Scene **self) {
+  RT_Scene *ptr=*self;
+  if(!ptr)
+    return;
+  if(ptr->t)
+    free(ptr->t);
+  if(ptr->l)
+    free(ptr->l);
+  if(ptr->s)
+    free(ptr->s);
+  free(ptr);
+  *self = NULL;
+}
+
+
+///////////////////////////////////////////////////////////////
+RT_Light* rtLightLoad(const char *filename, uint32_t *n) {
+  int32_t i=0, lcount=-1;
+  FILE *fd=NULL;
+  char *line=NULL;
+  RT_Light *res=NULL;
+
+  fd=fopen(filename, "r");
+  if (!fd) {
+    errno = E_IO;
+    goto cleanup;
+  }
+
+  while((line=rtReadline(fd)) != NULL) {
+    /*----------------------
+      read number of lights 
+     -----------------------*/
+    if (lcount == -1) {
+      sscanf(line, "%d", &lcount);
+      
+      // allocate memory for array of lights
+      *n = lcount;
+      res = malloc(lcount*sizeof(RT_Light));
+      if (!res) {
+        errno = E_MEMORY;
+        res = NULL;
+        goto cleanup;
+      }
+      
+      // initialize variables
+      i = 0;
+
+    /*------------------
+      read single light 
+     -------------------*/
+    } else {
+      sscanf(line, 
+             "%f %f %f %f %f %f %f", 
+             &res[i].p[0], &res[i].p[1], &res[i].p[2], &res[i].flux, &res[i].color.r, &res[i].color.g, &res[i].color.b);
+      i++;
+    }
+  }
+
+cleanup:
+  if(fd)
+    fclose(fd);
+
+  return res;
+}
+
+
+///////////////////////////////////////////////////////////////
+RT_Surface* rtSurfaceLoad(const char *filename, uint32_t *n) {
+  RT_Surface *res=NULL;
+  FILE *fd=NULL;
+  char *line=NULL, *pch;
+  int32_t scount=-1, i=0, j=0;
+  float tmp;
+
+  fd = fopen(filename, "r");
+  if(!fd) {
+    errno = E_IO;
+    goto cleanup;
+  }
+
+  while((line=rtReadline(fd)) != NULL) {
+    /*------------------------
+      read number of surfaces
+     -------------------------*/
+    if(scount == -1) {
+      sscanf(line, "%d", &scount);
+
+      // create surface array
+      *n = scount;
+      res = malloc(scount*sizeof(RT_Surface));
+      if(!res) {
+        errno = E_MEMORY;
+        res = NULL;
+        goto cleanup;
+      }
+
+      // initialize variables
+      i = 0;
+
+    /*-------------
+      read surface
+     --------------*/
+    } else {
+      j = 0;
+      pch = strtok(line, " \t");
+      while(pch != NULL) {
+        sscanf(pch, "%f", &tmp);
+        pch = strtok(NULL, " \t");
+        switch(j) {
+          case 0:
+            res[i].kd = tmp;
+            break;
+          case 1:
+            res[i].ks = tmp;
+            break;
+          case 2:
+            res[i].g = tmp;
+            break;
+          case 3:
+            res[i].ka = tmp;
+            break;
+          case 4:
+            res[i].color.r = tmp;
+            break;
+          case 5:
+            res[i].color.g = tmp;
+            break;
+          case 6:
+            res[i].color.b = tmp;
+            break;
+          case 7: 
+            res[i].kt = tmp;
+            break;
+          case 8:
+            res[i].eta = tmp;
+            break;
+          case 9:
+            res[i].kr = tmp;
+            break;
         }
+        if(++j >= 10)
+          break;
+      }
+      i++;
     }
+  }
 
-    cleanup:
-        if (fd) 
-            fclose(fd);
+cleanup:
+  if(fd)
+    fclose(fd);
 
-    return res;
+  return res;
 }
 
 
-void scn_camera_destroy(SCN_Camera *self) {
-    free(self);
+///////////////////////////////////////////////////////////////
+RT_Camera* rtCameraLoad(const char *filename) {
+  FILE *fd=NULL;
+  RT_Camera *res=NULL;
+  char *line=NULL;
+  int16_t vp=1, sc=3, sr=1;
+  RT_Vertex4f tmp;
+
+  fd=fopen(filename, "r");
+  if (!fd) {
+    errno = E_IO;
+    goto cleanup;
+  }
+
+  while((line=rtReadline(fd)) != NULL) {
+    /*-------------------
+      observer position 
+     --------------------*/
+    if(vp > 0) {
+      // create camera object
+      res = malloc(sizeof(RT_Camera));
+      if(!res) {
+        errno = E_MEMORY;
+        goto cleanup;
+      }
+      memset(res, 0, sizeof(RT_Camera));
+
+      // read observer position from file
+      sscanf(line, "%f %f %f", &res->ob[0], &res->ob[1], &res->ob[2]);
+
+      vp--;
+
+    /*----------------
+      screen position 
+     -----------------*/
+    } else if(sc > 0) {
+      sscanf(line, "%f %f %f", &tmp[0], &tmp[1], &tmp[2]);
+      switch(sc) {
+        //upper left screen corner
+        case 3:
+          vec_vector_copy(tmp, res->ul);
+          break;
+        //bottom left screen corner
+        case 2:
+          vec_vector_copy(tmp, res->bl);
+          break;
+        //upper right screen corner
+        case 1:
+          vec_vector_copy(tmp, res->ur);
+          break;
+      }
+      sc--;
+
+    /*------------------
+      screen resolution 
+     -------------------*/
+    } else if(sr > 0) {
+      sscanf(line, "%d %d", &res->sw, &res->sh);
+      sr--;
+    }
+  }
+
+cleanup:
+  if (fd) 
+    fclose(fd);
+
+  return res;
 }
 
 
-void scn_scene_destroy(SCN_Scene *self) {
-    if(self->t)
-        free(self->t);
-    if(self->l)
-        free(self->l);
-    if(self->s)
-        free(self->s);
-    free(self);
+///////////////////////////////////////////////////////////////
+void rtCameraDestroy(RT_Camera **self) {
+  free(*self);
+  *self = NULL;
 }
