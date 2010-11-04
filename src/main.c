@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     goto garbage_collect;
   }
   if(errno>0) {
-    printf("CRITICAL: unable to parse args: %s\n", err_desc());
+    printf("CRITICAL: unable to parse args: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
 
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
   printf("INFO: loading scene geometry: %s\n", g);
   RT_Scene *scene = rtSceneLoad(g);
   if(errno>0) {
-    printf("ERROR: unable to load scene geometry: %s\n", err_desc());
+    printf("ERROR: unable to load scene geometry: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
 
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
   printf("INFO: loading lights: %s\n", l);
   RT_Light *lgt = rtLightLoad(l, &n);
   if(errno>0) {
-    printf("ERROR: unable to load scene's lights: %s\n", err_desc());
+    printf("ERROR: unable to load scene's lights: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
   rtSceneSetLights(scene, lgt, n);
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
   printf("INFO: loading surface attributes: %s\n", a);
   RT_Surface *surf = rtSurfaceLoad(a, &n);
   if(errno>0) {
-    printf("ERROR: unable to load scene's attributes: %s\n", err_desc());
+    printf("ERROR: unable to load scene's attributes: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
   rtSceneSetSurfaces(scene, surf, n);
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
   printf("INFO: loading camera configuration: %s\n", c);
   RT_Camera *cam = rtCameraLoad(c);
   if(errno>0) {
-    printf("ERROR: unable to load camera info: %s\n", err_desc());
+    printf("ERROR: unable to load camera info: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
 
@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
   iml_bitmap_save(bmp, o, 24);
   iml_bitmap_destroy(bmp);
   if(errno>0) {
-    printf("ERROR: problem while creating result image: %s\n", err_desc());
+    printf("ERROR: problem while creating result image: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
 
