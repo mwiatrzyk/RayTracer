@@ -3,7 +3,7 @@
 #define __SCENE_H
 
 #include "types.h"
-#include "imagelib.h"
+#include "bitmap.h"
 #include <stdio.h>
 
 //// TYPES ////////////////////////////////////////////////////

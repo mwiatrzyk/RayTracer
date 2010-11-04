@@ -3,7 +3,7 @@
 #define __RAYTRACE_H
 
 #include "scene.h"
-#include "imagelib.h"
+#include "bitmap.h"
 
 #define MIN(a,b,c) ((c)<((a)<(b)? (a): (b))? (c): ((a)<(b)? (a): (b)))
 #define MAX(a,b,c) ((c)>((a)>(b)? (a): (b))? (c): ((a)>(b)? (a): (b)))

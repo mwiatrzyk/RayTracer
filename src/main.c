@@ -3,7 +3,7 @@
 #include <time.h>
 #include <errno.h>
 #include "stringtools.h"
-#include "imagelib.h"
+#include "bitmap.h"
 #include "scene.h"
 #include "rdtsc.h"
 #include "raytrace.h"
