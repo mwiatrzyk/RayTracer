@@ -105,9 +105,9 @@ RT_Scene* rtSceneLoad(const char *filename) {
     } else if (tcount > 0) {
       sscanf(line, "%d %d %d", &_i, &j, &k);
 
-      vec_vector_copy(v[_i], res->t[i].i);
-      vec_vector_copy(v[j], res->t[i].j);
-      vec_vector_copy(v[k], res->t[i].k);
+      rtVectorCopy(v[_i], res->t[i].i);
+      rtVectorCopy(v[j], res->t[i].j);
+      rtVectorCopy(v[k], res->t[i].k);
 
       i++; tcount--;
 
@@ -367,15 +367,15 @@ RT_Camera* rtCameraLoad(const char *filename) {
       switch(sc) {
         //upper left screen corner
         case 3:
-          vec_vector_copy(tmp, res->ul);
+          rtVectorCopy(tmp, res->ul);
           break;
         //bottom left screen corner
         case 2:
-          vec_vector_copy(tmp, res->bl);
+          rtVectorCopy(tmp, res->bl);
           break;
         //upper right screen corner
         case 1:
-          vec_vector_copy(tmp, res->ur);
+          rtVectorCopy(tmp, res->ur);
           break;
       }
       sc--;

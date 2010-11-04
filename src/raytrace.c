@@ -30,26 +30,26 @@ static int is_intersection(RT_Triangle *t, float *o, float *r, float *d, float *
   float pvec, tvec, qvec, tmp;
   float det, inv_det, u, v;
 
-  vec_vector_crossp(&pvec, r, &t->ik);
-  det = vec_vector_dotp(&t->ij, &pvec);
+  rtVectorCrossp(&pvec, r, &t->ik);
+  det = rtVectorDotp(&t->ij, &pvec);
   if(det > -EPSILON && det < EPSILON) {
     return 0;
   }
 
   inv_det = 1.0f / det;
-  vec_vector_make(&tvec, t->i, o);
-  u = vec_vector_dotp(&tvec, &pvec) * inv_det;
+  rtVectorMake(&tvec, t->i, o);
+  u = rtVectorDotp(&tvec, &pvec) * inv_det;
   if(u < 0.0f || u > 1.0f) {
     return 0;
   }
 
-  vec_vector_crossp(&qvec, &tvec, &t->ij);
-  v = vec_vector_dotp(r, &qvec) * inv_det;
+  rtVectorCrossp(&qvec, &tvec, &t->ij);
+  v = rtVectorDotp(r, &qvec) * inv_det;
   if(v < 0.0f || u + v > 1.0f) {
     return 0;
   }
 
-  *d = vec_vector_dotp(&t->ik, &qvec) * inv_det;
+  *d = rtVectorDotp(&t->ik, &qvec) * inv_det;
   if(*d < 0.0f)
     return 0;
 
@@ -71,10 +71,10 @@ static int is_intersection(RT_Triangle *t, float *o, float *r, float *d, float *
 #ifdef BENCHMARK
   intersection_test_count++;
 #endif
-  float rdn = vec_vector_dotp(r, t->n);
+  float rdn = rtVectorDotp(r, t->n);
   if(rdn == 0.0f)
     return 0;
-  *d = -(vec_vector_dotp(o, t->n) + t->d) / rdn;
+  *d = -(rtVectorDotp(o, t->n) + t->d) / rdn;
   if(*d < 0.0f || *d > *dmin)
     return 0;
   float x, y;
@@ -195,7 +195,7 @@ static void calc_line_coefficients(float *a, float *b, float *c,
 /* Precalculates coefficients used by intersection test algorithm. */
 static void precalc_intersection_coeffs(RT_Triangle *t) {
   // calculate d coefficient of plane equation
-  t->d = -vec_vector_dotp(t->i, t->n);
+  t->d = -rtVectorDotp(t->i, t->n);
 
   // project triangle onto coordinate system (one of XOY, XOZ, ZOY) that
   // won't cause reduction of triangle to segment
@@ -229,7 +229,7 @@ static void precalc_intersection_coeffs(RT_Triangle *t) {
 
 static int is_shadow(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *current, float *o, float *r, float *l) {
   int i;
-  float d, dmax=vec_vector_distance(o, l), dmin=FLT_MAX;
+  float d, dmax=rtVectorDistance(o, l), dmin=FLT_MAX;
   float min[4];
   float max[4];
 
@@ -303,18 +303,18 @@ static RT_Color raytrace(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *skip,
     iml_color_scale(&res, &nearest->s->color, nearest->s->ka * total_flux);
 
     // calculate intersection point with nearest triangle
-    vec_vector_raypoint(onew, o, r, dmin);
+    rtVectorRaypoint(onew, o, r, dmin);
 
     // raytrace reflected ray
     if(nearest->s->kr > 0.0f) {
-      vec_vector_ray_reflected(rray, nearest->n, vec_vector_inverse(tmpv, r));
+      rtVectorRayReflected(rray, nearest->n, rtVectorInverse(tmpv, r));
       rcolor = raytrace(t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1);
       iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kr));
     }
 
     // raytrace refracted ray
     if(nearest->s->kt > 0.0f) {
-      vec_vector_ray_refracted(rray, nearest->n, vec_vector_inverse(tmpv, r), nearest->s->eta);
+      rtVectorRayRefracted(rray, nearest->n, rtVectorInverse(tmpv, r), nearest->s->eta);
       rcolor = raytrace(t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1);
       iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kt));
     }
@@ -322,17 +322,17 @@ static RT_Color raytrace(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *skip,
     // calculate color at intersection point
     while(l < maxl) {
       df = rf = 0.0f;
-      vec_vector_ray(rnew, onew, l->p);
+      rtVectorRay(rnew, onew, l->p);
 
       if(!is_shadow(t, maxt, nearest, onew, rnew, l->p)) {
-        dm = vec_vector_distance(onew, l->p);
-        n_dot_lo = vec_vector_dotp(nearest->n, rnew);
+        dm = rtVectorDistance(onew, l->p);
+        n_dot_lo = rtVectorDotp(nearest->n, rnew);
 
         // diffusion factor
         df = nearest->s->kd * n_dot_lo;
 
         // reflection factor
-        rf = nearest->s->ks * pow(vec_vector_dotp(r, vec_vector_ray_reflected2(tmpv, nearest->n, rnew, n_dot_lo)), nearest->s->g);
+        rf = nearest->s->ks * pow(rtVectorDotp(r, rtVectorRayReflected2(tmpv, nearest->n, rnew, n_dot_lo)), nearest->s->g);
 
         // calculate color
         iml_color_add(&tmp, &l->color, &nearest->s->color);
@@ -354,16 +354,16 @@ static RT_Scene* preprocess_scene(RT_Scene *scene, RT_Camera *camera) {
   RT_Vertex4f io;
   while(t < maxt) {
     // calculate vectors used to calculate normal
-    vec_vector_make(t->ij, t->i, t->j);
-    vec_vector_make(t->ik, t->i, t->k);
+    rtVectorMake(t->ij, t->i, t->j);
+    rtVectorMake(t->ik, t->i, t->k);
 
     // make vector from observer towards one of triangle vertices
-    vec_vector_normalize(vec_vector_make(io, t->i, camera->ob));
+    rtVectorNorm(rtVectorMake(io, t->i, camera->ob));
 
     // create and normalize normal vector and point it towards camera
-    vec_vector_normalize(vec_vector_crossp(t->n, t->ij, t->ik));
-    if(vec_vector_dotp(t->n, io) < 0.0f) {
-      vec_vector_inverse(t->n, t->n);
+    rtVectorNorm(rtVectorCrossp(t->n, t->ij, t->ik));
+    if(rtVectorDotp(t->n, io) < 0.0f) {
+      rtVectorInverse(t->n, t->n);
     }
 
     // calculate coefficients of intersection test algorithm
@@ -416,7 +416,7 @@ RT_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera) {
             x_coef*(b[2] - a[2]) + y_coef*(c[2] - a[2]) + a[2] - o[2],
             0.0f
           };
-          vec_vector_normalize(ray);
+          rtVectorNorm(ray);
 
           /* Trace current ray and calculate color of current pixel. */
           color = raytrace(scene->t, (RT_Triangle*)(scene->t+scene->nt), NULL,
