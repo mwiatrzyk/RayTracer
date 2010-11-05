@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
+#include <string.h>
+#include "error.h"
 #include "stringtools.h"
 #include "bitmap.h"
 #include "scene.h"
@@ -32,7 +34,7 @@ void print_help(const char *executable) {
 /* Parse command line arguments. */
 int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, char **s, char **o) {
   int i=1, alen;
-  char *tmp, **dst;
+  char *tmp, **dst=NULL;
   if(argc <= 1) {
     print_help(argv[0]);
     return 0;
@@ -40,23 +42,23 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
     while(i < argc) {
       tmp = argv[i];
       alen = strlen(tmp);
-      if(str_string_startswith(tmp, "-g")) {
+      if(rtStringStartsWith(tmp, "-g")) {
         dst = g;
-      } else if(str_string_startswith(tmp, "-l")) {
+      } else if(rtStringStartsWith(tmp, "-l")) {
         dst = l;
-      } else if(str_string_startswith(tmp, "-a")) {
+      } else if(rtStringStartsWith(tmp, "-a")) {
         dst = a;
-      } else if(str_string_startswith(tmp, "-c")) {
+      } else if(rtStringStartsWith(tmp, "-c")) {
         dst = c;
-      } else if(str_string_startswith(tmp, "-s")) {
+      } else if(rtStringStartsWith(tmp, "-s")) {
         dst = s;
-      } else if(str_string_startswith(tmp, "-o")) {
+      } else if(rtStringStartsWith(tmp, "-o")) {
         dst = o;
       }
       if(alen == 2) {
-        *dst = str_string_copy(argv[++i]);
+        *dst = rtStringCopy(argv[++i]);
       } else {
-        *dst = str_string_copy((char*)(tmp+2));
+        *dst = rtStringCopy((char*)(tmp+2));
       }
       i++;
     }
@@ -71,7 +73,6 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
 
 /* Bootstrap function */
 int main(int argc, char* argv[]) {
-  char *tmp=NULL;
   char *g=NULL, *l=NULL, *a=NULL, *c=NULL, *s=NULL, *o=NULL;
   uint32_t n;
 
@@ -85,10 +86,10 @@ int main(int argc, char* argv[]) {
   }
 
   // prepare data
-  if(!g) g = str_string_concat(s, ".brs");
-  if(!l) l = str_string_concat(s, ".lgt");
-  if(!a) a = str_string_concat(s, ".atr");
-  if(!c) c = str_string_concat(s, ".cam");
+  if(!g) g = rtStringConcat(s, ".brs");
+  if(!l) l = rtStringConcat(s, ".lgt");
+  if(!a) a = rtStringConcat(s, ".atr");
+  if(!c) c = rtStringConcat(s, ".cam");
 
   // load scene geometry
   printf("INFO: loading scene geometry: %s\n", g);
@@ -140,12 +141,12 @@ int main(int argc, char* argv[]) {
   }
 
 garbage_collect:
-  str_string_destroy(&g);
-  str_string_destroy(&l);
-  str_string_destroy(&a);
-  str_string_destroy(&c);
-  str_string_destroy(&s);
-  str_string_destroy(&o);
+  rtStringDestroy(&g);
+  rtStringDestroy(&l);
+  rtStringDestroy(&a);
+  rtStringDestroy(&c);
+  rtStringDestroy(&s);
+  rtStringDestroy(&o);
   if(errno>0) {
     return 1;
   } else {
