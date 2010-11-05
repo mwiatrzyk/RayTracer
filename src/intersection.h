@@ -6,18 +6,19 @@
 
 //// INTERSECTION TEST ALGORITHMS /////////////////////////////
 
-/* First algorithm. */
+/* First algorithm. Works by solving S+tR=u(A-B)+v(C-B) equation. */
 int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin);
 
-/* Second algorithm. */
+/* Second algorithm. Projects 3D triangle onto 2D plane and then solves
+ * intersection equation in 2D. */
 int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin);
 
 
 //// OTHER FUNCTIONS //////////////////////////////////////////
 
-/* Precalculates coefficients of intersection test algorithms for given
+/* Precalculates coefficients of 2nd intersection test algorithm for given
  * triangle `t`. */
-void rtIntCoeffsPrecalc(RT_Triangle *t);
+void rtInt1CoeffsPrecalc(RT_Triangle *t);
 
 #endif
 

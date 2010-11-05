@@ -10,13 +10,14 @@
 typedef float RT_Vertex4f[4];
 
 
-//// ENUMS ////////////////////////////////////////////////////
+//// INTERSECTION TEST COEFFS STRUCTURES //////////////////////
 
-typedef enum _RT_ProjectionPlane {
-  PP_XOY,
-  PP_XOZ,
-  PP_ZOY
-} RT_ProjectionPlane;
+typedef struct _RT_Int1Coeffs {
+  float d;                      // d coefficient of triangle's plane equation: (i dotp n) + d = 0
+  int xi, yi;                   // indices of vector coords to use after projection
+  float A[4], B[4], C[4];       // line coefficients
+  float minx, maxx, miny, maxy; // bounding box coefficients
+} RT_Int1Coeffs;
 
 
 //// STRUCTURES ///////////////////////////////////////////////
@@ -38,12 +39,9 @@ typedef struct _RT_Triangle {
   int32_t sid;                  // surface index (used only to assign `s` pointer while loading surface description)
   RT_Vertex4f n;                // normal vector
   RT_Vertex4f ij, ik;           // vectors: i to j, i to k
-#if INT_ALG == 2
-  float d;                      // d coefficient of triangle's plane equation: (i dotp n) + d = 0
-  RT_ProjectionPlane pplane;   // decides which plane is used while performing 3D -> 2D projection of triangle
-  float A[4], B[4], C[4];       // line coefficients
-  float minx, maxx, miny, maxy; // bounding box coefficients
-#endif
+  union {
+    RT_Int1Coeffs i1;
+  } ic;
 } RT_Triangle;
 
 

@@ -1,5 +1,6 @@
 #include "preprocess.h"
 #include "vectormath.h"
+#include "intersection.h"
 
 
 ///////////////////////////////////////////////////////////////
@@ -19,9 +20,10 @@ RT_Scene* rtScenePreprocess(RT_Scene *scene, RT_Camera *camera) {
     if(rtVectorDotp(t->n, io) < 0.0f) {
       rtVectorInverse(t->n, t->n);
     }
-
-    // calculate coefficients of intersection test algorithm
-    rtIntCoeffsPrecalc(t);
+    
+    // choose intersection test algorithm for triangle
+    t->isint = &rtInt1Test;
+    rtInt1CoeffsPrecalc(t);
 
     t++;
   }
