@@ -1,4 +1,3 @@
-// vim: tabstop=2 shiftwidth=2 softtabstop=2
 #ifndef __SCENE_H
 #define __SCENE_H
 
@@ -135,3 +134,5 @@ RT_Camera* rtCameraLoad(const char *filename);
 void rtCameraDestroy(RT_Camera **self);
 
 #endif
+
+// vim: tabstop=2 shiftwidth=2 softtabstop=2

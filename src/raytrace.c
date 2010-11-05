@@ -1,4 +1,3 @@
-// vim: tabstop=2 shiftwidth=2 softtabstop=2
 #include <float.h>
 #include "raytrace.h"
 #include "vectormath.h"
@@ -214,3 +213,5 @@ RT_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera) {
 
   return res;
 }
+
+// vim: tabstop=2 shiftwidth=2 softtabstop=2

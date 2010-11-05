@@ -1,4 +1,3 @@
-// vim: tabstop=2 shiftwidth=2 softtabstop=2
 #include "scene.h"
 #include "error.h"
 #include "vectormath.h"
@@ -402,3 +401,5 @@ void rtCameraDestroy(RT_Camera **self) {
   free(*self);
   *self = NULL;
 }
+
+// vim: tabstop=2 shiftwidth=2 softtabstop=2
