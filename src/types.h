@@ -9,16 +9,14 @@
 
 #define __ALIGN_16 __attribute__((aligned(16)))
 
-typedef enum _bool {
-    false = 0,
-    true = 1
-} bool;
 
+//// DATA TYPES SHORTCUTS /////////////////////////////////////
 typedef short int int16_t;
 typedef unsigned short int uint16_t;
 typedef int int32_t;
 typedef unsigned int uint32_t;
 typedef long int int64_t;
 typedef unsigned long int uint64_t;
+
 
 #endif

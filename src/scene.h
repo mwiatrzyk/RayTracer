@@ -34,6 +34,7 @@ typedef struct _RT_Surface {
 typedef struct _RT_Triangle {
   RT_Vertex4f i, j, k;          // triangle's vertices
   RT_Surface *s;                // pointer to surface properties of this triangle
+  int (*isint)(struct _RT_Triangle*, float*, float*, float*, float*);  // pointer to intersection test function dedicated for this triangle
   /* helpers */
   int32_t sid;                  // surface index (used only to assign `s` pointer while loading surface description)
   RT_Vertex4f n;                // normal vector
