@@ -5,8 +5,8 @@ LDFLAGS=-lm
 SDIR=./src
 ODIR=./obj
 
-SOURCES=main.c bitmap.c scene.c error.c raytrace.c stringtools.c preprocess.c intersection.c
-HEADERS=bitmap.h scene.h error.h raytrace.h vectormath.h stringtools.h preprocess.h intersection.h
+SOURCES=main.c bitmap.c scene.c error.c raytrace.c stringtools.c preprocess.c intersection.c voxelize.c
+HEADERS=bitmap.h scene.h error.h raytrace.h vectormath.h stringtools.h preprocess.h intersection.h voxelize.h
 EXECUTABLE=raytrace
 
 OBJ=$(SOURCES:.c=.o)
