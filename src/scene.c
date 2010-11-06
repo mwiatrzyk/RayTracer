@@ -1,6 +1,7 @@
 #include "scene.h"
 #include "error.h"
 #include "vectormath.h"
+#include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -61,6 +62,10 @@ RT_Scene* rtSceneLoad(const char *filename) {
         goto cleanup;
       }
       memset(res, 0, sizeof(RT_Scene));
+      for(k=0; k<3; k++) {
+        res->dmin[k] = FLT_MAX;
+        res->dmax[k] = FLT_MIN;
+      }
 
       // create placeholder for vertices
       v = malloc(vcount*sizeof(RT_Vertex4f));
@@ -78,6 +83,13 @@ RT_Scene* rtSceneLoad(const char *filename) {
      -----------------------------*/
     } else if (vcount > 0) {
       sscanf(line, "%f %f %f", &v[i][0], &v[i][1], &v[i][2]);
+      
+      // update minimal and maximal domain size
+      for(k=0; k<3; k++) {
+        if(v[i][k] < res->dmin[k]) res->dmin[k]=v[i][k];
+        if(v[i][k] > res->dmax[k]) res->dmax[k]=v[i][k];
+      }
+
       i++; vcount--;
 
     /*----------------------------

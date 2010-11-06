@@ -56,6 +56,8 @@ typedef struct _RT_Light {
 /* Definition of scene. This is a container that keeps entire scene data in one
  * place. */
 typedef struct _RT_Scene {
+  float dmin[3];  // minimal values of x, y and z of all scene's triangles
+  float dmax[3];  // like above, but maximal
   int32_t nt;     // number of triangles in scene
   int32_t nl;     // number of lights
   int32_t ns;     // number of surfaces
