@@ -1,12 +1,12 @@
 CC=gcc
-CFLAGS=-c -Wall -O2 -DINT_ALG=2
+CFLAGS=-c -Wall -O2 -DVERBOSE=0
 LDFLAGS=-lm
 
 SDIR=./src
 ODIR=./obj
 
 SOURCES=main.c bitmap.c scene.c error.c raytrace.c stringtools.c preprocess.c intersection.c voxelize.c
-HEADERS=bitmap.h scene.h error.h raytrace.h vectormath.h stringtools.h preprocess.h intersection.h voxelize.h
+HEADERS=common.h bitmap.h scene.h error.h raytrace.h vectormath.h stringtools.h preprocess.h intersection.h voxelize.h
 EXECUTABLE=raytrace
 
 OBJ=$(SOURCES:.c=.o)
