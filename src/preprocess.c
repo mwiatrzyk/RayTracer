@@ -22,7 +22,6 @@ RT_Scene* rtScenePreprocess(RT_Scene *scene, RT_Camera *camera) {
     }
     
     // choose intersection test algorithm for triangle
-    t->isint = &rtInt1Test;
     rtInt1CoeffsPrecalc(t);
 
     t++;

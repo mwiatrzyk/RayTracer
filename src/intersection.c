@@ -169,6 +169,9 @@ void rtInt1CoeffsPrecalc(RT_Triangle *t) {
   rtInt1CalcLineCoeffs(t->i, t->j, t->k, cf->xi, cf->yi, &cf->A[0], &cf->B[0], &cf->C[0]);
   rtInt1CalcLineCoeffs(t->j, t->k, t->i, cf->xi, cf->yi, &cf->A[1], &cf->B[1], &cf->C[1]);
   rtInt1CalcLineCoeffs(t->i, t->k, t->j, cf->xi, cf->yi, &cf->A[2], &cf->B[2], &cf->C[2]);
+  
+  // assign intersection test function
+  t->isint = &rtInt1Test;
 }
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2
