@@ -31,9 +31,14 @@ RT_Bitmap* rtBitmapCreate(int32_t width, int32_t height, uint32_t background) {
 
 
 ///////////////////////////////////////////////////////////////
-void rtBitmapDestroy(RT_Bitmap* self) {
-  free(self->pixels);
-  free(self);
+void rtBitmapDestroy(RT_Bitmap **self) {
+  RT_Bitmap *ptr=*self;
+  if(ptr) {
+    if(ptr->pixels)
+      free(ptr->pixels);
+    free(ptr);
+    *self = NULL;
+  }
 }
 
 
@@ -252,7 +257,7 @@ void rtBitmapSave(const RT_Bitmap* self, const char* filename, uint16_t bpp) {
   unsigned char *palette=NULL;
 
   memset(&hdr, 0, sizeof(hdr));
-
+  
   //validate bpp parameter
   if (bpp!=1 && bpp!=4 && bpp!=8 && bpp!=16 && bpp!=24 && bpp!=32) {
     errno = E_INVALID_BPP;

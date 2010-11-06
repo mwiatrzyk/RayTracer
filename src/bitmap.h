@@ -124,7 +124,7 @@ static inline uint32_t rtColorGetA(uint32_t color) {
 RT_Bitmap* rtBitmapCreate(int32_t width, int32_t height, uint32_t background);
 
 /* Releases memory occupied by given RT_Bitmap object. */
-void rtBitmapDestroy(RT_Bitmap* self);
+void rtBitmapDestroy(RT_Bitmap **self);
 
 /* Loads bitmap image from given file and returns it as buffer of bytes. Bitmap
  * is decoded to RGBA format used by RT_Bitmap object.
