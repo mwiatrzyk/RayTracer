@@ -130,14 +130,18 @@ int main(int argc, char* argv[]) {
   RT_IINFO("ray-tracing in progress...");
   clock_t start = clock();
   RT_Bitmap *bmp=rtr_execute(scene, cam);
-  RT_INFO("...done. Time taken: %.3f seconds", (double)(clock()-start)/CLOCKS_PER_SEC);
+  if(errno>0) {
+    RT_WARN("errno set by ray-trace process: %d, %s", errno, rtGetErrorDesc());
+    errno = 0;
+  }
+  RT_INFO("...ray-tracing done. Time taken: %.3f seconds", (double)(clock()-start)/CLOCKS_PER_SEC);
 
   // save result bitmap
   RT_INFO("creating result image: %s", o);
   rtBitmapSave(bmp, o, 24);
-  rtBitmapDestroy(bmp);
+  rtBitmapDestroy(&bmp);
   if(errno>0) {
-    RT_ERROR("problem while creating result image: %s\n", rtGetErrorDesc());
+    RT_ERROR("problem while creating result image: %d, %s", errno, rtGetErrorDesc());
     goto garbage_collect;
   }
 
