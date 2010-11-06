@@ -20,6 +20,9 @@ RT_Scene* rtScenePreprocess(RT_Scene *scene, RT_Camera *camera) {
     if(rtVectorDotp(t->n, io) < 0.0f) {
       rtVectorInverse(t->n, t->n);
     }
+
+    // calculate d coefficient of plane equation
+    t->d = -rtVectorDotp(t->i, t->n);
     
     // choose intersection test algorithm for triangle
     rtInt1CoeffsPrecalc(t);

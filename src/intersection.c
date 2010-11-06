@@ -94,7 +94,7 @@ int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
 
   RT_Int1Coeffs *cf=&t->ic.i1;
 
-  *d = -(rtVectorDotp(o, t->n) + cf->d) / rdn;
+  *d = -(rtVectorDotp(o, t->n) + t->d) / rdn;
   if(*d < 0.0f || *d > *dmin)
     return 0;
 
@@ -142,9 +142,6 @@ int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
 ///////////////////////////////////////////////////////////////
 void rtInt1CoeffsPrecalc(RT_Triangle *t) {
   RT_Int1Coeffs *cf=&t->ic.i1;
-
-  // calculate d coefficient of plane equation
-  cf->d = -rtVectorDotp(t->i, t->n);
 
   // project triangle onto coordinate system (one of XOY, XOZ, ZOY) that
   // won't cause reduction of triangle to segment

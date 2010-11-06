@@ -13,7 +13,6 @@ typedef float RT_Vertex4f[4];
 //// INTERSECTION TEST COEFFS STRUCTURES //////////////////////
 
 typedef struct _RT_Int1Coeffs {
-  float d;                      // d coefficient of triangle's plane equation: (i dotp n) + d = 0
   int xi, yi;                   // indices of vector coords to use after projection
   float A[4], B[4], C[4];       // line coefficients
   float minx, maxx, miny, maxy; // bounding box coefficients
@@ -39,6 +38,7 @@ typedef struct _RT_Triangle {
   int32_t sid;                  // surface index (used only to assign `s` pointer while loading surface description)
   RT_Vertex4f n;                // normal vector
   RT_Vertex4f ij, ik;           // vectors: i to j, i to k
+  float d;                      // d parameter of plane equation: nx*x + ny*y + nz*z + d = 0
   union {
     RT_Int1Coeffs i1;
   } ic;
