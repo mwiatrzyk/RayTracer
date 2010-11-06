@@ -4,6 +4,9 @@
 #ifndef __COMMON_H
 #define __COMMON_H
 
+#include <time.h>
+
+
 //// VERBOSITY LEVELS /////////////////////////////////////////
 
 #define DEBUG     0   // debug messages
@@ -21,50 +24,48 @@
 /* Get maximal value of a, b and c. */
 #define MAX(a,b,c) ((c)>((a)>(b)? (a): (b))? (c): ((a)>(b)? (a): (b)))
 
+/* `printf` wrapper. */
+#define PRINT(prefix, msg, ...)  printf(prefix": %.3f sec: "msg"\n", (double)clock()/CLOCKS_PER_SEC, __VA_ARGS__)
+
 /* Shows debug messages. */
 #if VERBOSE <= DEBUG
-  #define RT_DEBUG(msg, _VA_ARGS_) printf("D: "msg"\n", _VA_ARGS_)
-  #define RT_DDEBUG(msg) printf("D: "msg"\n")
+  #define RT_DEBUG(msg, ...) PRINT("D", msg, __VA_ARGS__)
 #else
-  #define RT_DEBUG(msg, _VA_ARGS_)
-  #define RT_DDEBUG(msg, _VA_ARGS_)
+  #define RT_DEBUG(msg, ...)
 #endif
 
-/* Shows RT_INFO messages. */
+/* Shows info messages. */
 #if VERBOSE <= INFO
-  #define RT_INFO(msg, _VA_ARGS_) printf("I: "msg"\n", _VA_ARGS_)
-  #define RT_IINFO(msg) printf("I: "msg"\n")
+  #define RT_INFO(msg, ...) PRINT("I", msg, __VA_ARGS__)
 #else
-  #define RT_INFO(msg, _VA_ARGS_)
-  #define RT_IINFO(msg, _VA_ARGS_)
+  #define RT_INFO(msg, ...)
 #endif
 
 /* Shows warning messages. */
 #if VERBOSE <= WARN
-  #define RT_WARN(msg, _VA_ARGS_) printf("W: "msg"\n", _VA_ARGS_)
-  #define RT_WWARN(msg) printf("W: "msg"\n")
+  #define RT_WARN(msg, ...) PRINT("W", msg, __VA_ARGS__)
 #else
-  #define RT_WARN(msg, _VA_ARGS_)
-  #define RT_WWARN(msg, _VA_ARGS_)
+  #define RT_WARN(msg, ...)
 #endif
 
 /* Shows error messages. */
 #if VERBOSE <= ERROR
-  #define RT_ERROR(msg, _VA_ARGS_) printf("E: "msg"\n", _VA_ARGS_)
-  #define RT_EERROR(msg) printf("E: "msg"\n")
+  #define RT_ERROR(msg, ...) PRINT("E", msg, __VA_ARGS__)
 #else
-  #define RT_ERROR(msg, _VA_ARGS_)
-  #define RT_EERROR(msg, _VA_ARGS_)
+  #define RT_ERROR(msg, ...)
 #endif
 
 /* Shows critical error messages. */
 #if VERBOSE <= CRITICAL
-  #define RT_CRITICAL(msg, _VA_ARGS_) printf("C: "msg"\n", _VA_ARGS_)
-  #define RT_CCRITICAL(msg) printf("C: "msg"\n")
+  #define RT_CRITICAL(msg, ...) PRINT("C", msg, __VA_ARGS__)
 #else
-  #define RT_CRITICAL(msg, _VA_ARGS_)
-  #define RT_CCRITICAL(msg, _VA_ARGS_)
+  #define RT_CRITICAL(msg, ...)
 #endif
+
+/* Set of debug, info, warning, error and critical message logging macros with
+ * message without arguments. */
+#define RT_DDEBUG(msg) RT_DEBUG(msg"%s", "")
+#define RT_IINFO(msg) RT_INFO(msg"%s", "")
 
 #endif
 
