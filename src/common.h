@@ -29,7 +29,7 @@
 
 /* Shows debug messages. */
 #if VERBOSE <= DEBUG
-  #define RT_DEBUG(msg, ...) PRINT("D", msg, __VA_ARGS__)
+  #define RT_DEBUG(msg, ...) PRINT("\033[94mD", msg"\033[0m", __VA_ARGS__)
 #else
   #define RT_DEBUG(msg, ...)
 #endif
@@ -43,21 +43,21 @@
 
 /* Shows warning messages. */
 #if VERBOSE <= WARN
-  #define RT_WARN(msg, ...) PRINT("W", msg, __VA_ARGS__)
+  #define RT_WARN(msg, ...) PRINT("\033[93mW", msg"\033[0m", __VA_ARGS__)
 #else
   #define RT_WARN(msg, ...)
 #endif
 
 /* Shows error messages. */
 #if VERBOSE <= ERROR
-  #define RT_ERROR(msg, ...) PRINT("E", msg, __VA_ARGS__)
+  #define RT_ERROR(msg, ...) PRINT("\033[91mE", msg"\033[0m", __VA_ARGS__)
 #else
   #define RT_ERROR(msg, ...)
 #endif
 
 /* Shows critical error messages. */
 #if VERBOSE <= CRITICAL
-  #define RT_CRITICAL(msg, ...) PRINT("C", msg, __VA_ARGS__)
+  #define RT_CRITICAL(msg, ...) PRINT("\033[91mC", msg"\033[0m", __VA_ARGS__)
 #else
   #define RT_CRITICAL(msg, ...)
 #endif
@@ -66,6 +66,9 @@
  * message without arguments. */
 #define RT_DDEBUG(msg) RT_DEBUG(msg"%s", "")
 #define RT_IINFO(msg) RT_INFO(msg"%s", "")
+#define RT_WWARN(msg) RT_WARN(msg"%s", "")
+#define RT_EERROR(msg) RT_ERROR(msg"%s", "")
+#define RT_CCRITICAL(msg) RT_CRITICAL(msg"%s", "")
 
 #endif
 
