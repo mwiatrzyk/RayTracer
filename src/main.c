@@ -8,6 +8,7 @@
 #include "bitmap.h"
 #include "scene.h"
 #include "rdtsc.h"
+#include "common.h"
 #include "raytrace.h"
 
 
@@ -64,7 +65,7 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
     }
   }
   if((!*s && (!*g || !*l || !*a || !*c)) || !*o) {
-    printf("ERROR: some of required arguments are missing\n");
+    printf("E: some of required arguments are missing\n");
     return 0;
   }
   return 1;
@@ -81,7 +82,7 @@ int main(int argc, char* argv[]) {
     goto garbage_collect;
   }
   if(errno>0) {
-    printf("CRITICAL: unable to parse args: %s\n", rtGetErrorDesc());
+    RT_CRITICAL("unable to parse args: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
 
@@ -92,51 +93,51 @@ int main(int argc, char* argv[]) {
   if(!c) c = rtStringConcat(s, ".cam");
 
   // load scene geometry
-  printf("INFO: loading scene geometry: %s\n", g);
+  RT_INFO("loading scene geometry: %s", g);
   RT_Scene *scene = rtSceneLoad(g);
   if(errno>0) {
-    printf("ERROR: unable to load scene geometry: %s\n", rtGetErrorDesc());
+    RT_ERROR("unable to load scene geometry: %s", rtGetErrorDesc());
     goto garbage_collect;
   }
 
   // load lights and add to scene
-  printf("INFO: loading lights: %s\n", l);
+  RT_INFO("loading lights: %s", l);
   RT_Light *lgt = rtLightLoad(l, &n);
   if(errno>0) {
-    printf("ERROR: unable to load scene's lights: %s\n", rtGetErrorDesc());
+    RT_ERROR("unable to load scene's lights: %s", rtGetErrorDesc());
     goto garbage_collect;
   }
   rtSceneSetLights(scene, lgt, n);
 
   // load surface attributes and add to scene
-  printf("INFO: loading surface attributes: %s\n", a);
+  RT_INFO("loading surface attributes: %s", a);
   RT_Surface *surf = rtSurfaceLoad(a, &n);
   if(errno>0) {
-    printf("ERROR: unable to load scene's attributes: %s\n", rtGetErrorDesc());
+    RT_ERROR("unable to load scene's attributes: %s", rtGetErrorDesc());
     goto garbage_collect;
   }
   rtSceneSetSurfaces(scene, surf, n);
 
   // load camera configuration
-  printf("INFO: loading camera configuration: %s\n", c);
+  RT_INFO("loading camera configuration: %s", c);
   RT_Camera *cam = rtCameraLoad(c);
   if(errno>0) {
-    printf("ERROR: unable to load camera info: %s\n", rtGetErrorDesc());
+    RT_ERROR("unable to load camera RT_INFO: %s", rtGetErrorDesc());
     goto garbage_collect;
   }
 
   // execute raytrace process
-  printf("INFO: ray-tracing...\n");
+  RT_IINFO("ray-tracing in progress...");
   clock_t start = clock();
   RT_Bitmap *bmp=rtr_execute(scene, cam);
-  printf("INFO: ...done. Time taken: %f seconds\n", (double)(clock()-start)/CLOCKS_PER_SEC);
+  RT_INFO("...done. Time taken: %.3f seconds", (double)(clock()-start)/CLOCKS_PER_SEC);
 
   // save result bitmap
-  printf("INFO: creating result image: %s\n", o);
+  RT_INFO("creating result image: %s", o);
   rtBitmapSave(bmp, o, 24);
   rtBitmapDestroy(bmp);
   if(errno>0) {
-    printf("ERROR: problem while creating result image: %s\n", rtGetErrorDesc());
+    RT_ERROR("problem while creating result image: %s\n", rtGetErrorDesc());
     goto garbage_collect;
   }
 
