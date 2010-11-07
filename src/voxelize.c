@@ -100,7 +100,13 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
 ///////////////////////////////////////////////////////////////
 void rtUddDestroy(RT_Udd **self) {
   RT_Udd *ptr = *self;
+  int32_t k, s=ptr->nv[0]*ptr->nv[1]*ptr->nv[2];
   if(ptr->v) {
+    for(k=0; k<s; k++) {
+      if(ptr->v[k].t) {
+        free(ptr->v[k].t);
+      }
+    }
     free(ptr->v);
   }
   free(ptr);
