@@ -25,7 +25,7 @@
 #define MAX(a,b,c) ((c)>((a)>(b)? (a): (b))? (c): ((a)>(b)? (a): (b)))
 
 /* `printf` wrapper. */
-#define PRINT(prefix, msg, ...)  printf(prefix": %.3f sec: "msg"\n", (double)clock()/CLOCKS_PER_SEC, __VA_ARGS__)
+#define PRINT(prefix, msg, ...)  printf(prefix": %.3f sec: "msg"\n", (double)clock()/CLOCKS_PER_SEC, __VA_ARGS__);
 
 /* Shows debug messages. */
 #if VERBOSE <= DEBUG
