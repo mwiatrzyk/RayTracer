@@ -42,10 +42,10 @@ static inline int rtVertexGetVoxel(
   return 1;
 }
 
-:param: s: pointer to RT_Udd object
-:param: i, j, k: voxel coordinates */
-static inline int32_t rtVoxelArrayOffset(const RT_Udd *s, int32_t i, int32_t j, int32_t k) {
-  return (i*s->nv[1] + j)*s->nv[2] + k;
+/* Calculates mapping from 3D coords into 1D array offset value. Used to get 1D
+ * index of voxel at position (i,j,k). */
+static inline int32_t rtVoxelArrayOffset(const RT_Udd *udd, int32_t i, int32_t j, int32_t k) {
+  return (i*udd->nv[1] + j)*udd->nv[2] + k;
 }
 
 
