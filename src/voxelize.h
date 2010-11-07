@@ -12,6 +12,7 @@
 /* Structure that represents single voxel. */
 typedef struct _RT_Voxel {
   int32_t nt;       // number of triangles in this voxel
+  int32_t p;        // number of free indices left in `t` array (when 0, `t` must be reallocated)
   RT_Triangle **t;  // array of triangle pointers
 } RT_Voxel;
 
