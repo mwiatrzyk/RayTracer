@@ -27,8 +27,20 @@ typedef struct _RT_Udd {
 
 //// INLINE FUNCTIONS /////////////////////////////////////////
 
-/* Calculates mapping from 3D coords into 1D array offset value. Used to get 1D
- * index of voxel at position (i,j,k).
+/* Calculate (i,j,k) voxel indices for given vertex `v`. Return 1 if vertex is
+ * inside domain or 0 if it is not. */
+static inline int rtVertexGetVoxel(
+    const RT_Scene *scene, const RT_Udd *udd, float *v,
+    int32_t *i, int32_t *j, int32_t *k)
+{
+  *i = (v[0] - scene->dmin[0]) / udd->s[0];
+  *j = (v[1] - scene->dmin[1]) / udd->s[1];
+  *k = (v[2] - scene->dmin[2]) / udd->s[2];
+  if(*i < 0 || *i >= udd->nv[0]) return 0;
+  if(*j < 0 || *j >= udd->nv[1]) return 0;
+  if(*k < 0 || *k >= udd->nv[2]) return 0;
+  return 1;
+}
 
 :param: s: pointer to RT_Udd object
 :param: i, j, k: voxel coordinates */
