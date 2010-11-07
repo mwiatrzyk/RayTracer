@@ -211,15 +211,73 @@ void rtUddVoxelize(RT_Udd *self, RT_Scene *scene) {
             }
           }
           
-          // add triangle pointer to buffer
-          tmp[itmp++] = t;
+          //TODO: add more processing to remove as much of voxels as possible
 
-          // proceed to next triangle
-          t++;
+          // add triangle to current voxel
+          vptr = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
+          rtVoxelAddTriangle(vptr, t, BUFSIZE);
+        }
+      }
+    }
+
+    t++;
+  }
+}
+///////////////////////////////////////////////////////////////
+int rtUddFindStartupVoxel(
+    RT_Udd *self, RT_Scene *scene, 
+    float *o, float *r, 
+    int32_t *i, int32_t *j, int32_t *k) 
+{
+  // check if we are already inside domain
+  if(rtVertexGetVoxel(scene, self, o, i, j, k))
+    return 1;
+
+  // define some more variables
+  RT_Vertex4f tmpv;
+  float dmin1=FLT_MAX, dmin2=FLT_MAX;
+  float d;
+  int a;
+
+  /* Calculate distance from ray origin to all walls by solving simplified
+   * ray->plane equation. Get two minimal distances (because only two are
+   * needed to test whether ray enters domain). */
+  for(a=0; a<3; a++) {
+    if(r[a] != 0.0f) {
+      d = (scene->dmin[a] - o[a]) / r[a];
+      if(d > 0.0f) {
+        if(d < dmin1) {
+          dmin2 = dmin1;
+          dmin1 = d;
+        } else if(d < dmin2) {
+          dmin2 = d;
+        }
+      }
+      d = (scene->dmax[a] - o[a]) / r[a];
+      if(d > 0.0f) {
+        if(d < dmin1) {
+          dmin2 = dmin1;
+          dmin1 = d;
+        } else if(d < dmin2) {
+          dmin2 = d;
         }
       }
     }
   }
+  
+  /* Calculate intersection point at first minimal distance and check whether
+   * it belongs to domain. */
+  rtVectorRaypoint(tmpv, o, r, dmin1);
+  if(rtVertexGetVoxel(scene, self, tmpv, i, j, k))
+    return 1;
+
+  /* Calculate intersection point at second minimal distance - if this check
+   * fails, ray is not entering domain. */
+  rtVectorRaypoint(tmpv, o, r, dmin2);
+  if(rtVertexGetVoxel(scene, self, tmpv, i, j, k))
+    return 1;
+
+  return 0;
 }
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2

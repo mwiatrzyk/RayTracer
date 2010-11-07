@@ -60,6 +60,15 @@ void rtUddDestroy(RT_Udd **self);
 /* Performs scene voxelization (fills voxels with triangles). */
 void rtUddVoxelize(RT_Udd *self, RT_Scene *scene);
 
+/* Calculates indices of startup voxel for given ray origin `o` and normalized
+ * ray vector `r`. Returns 1 if ray enters domain or 0 otherwise. */
+int rtUddFindStartupVoxel(
+  RT_Udd *self, RT_Scene *scene, 
+  float *o, float *r, 
+  int32_t *i, int32_t *j, int32_t *k
+);
+
+
 #endif
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2
