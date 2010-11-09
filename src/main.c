@@ -1,4 +1,3 @@
-// vim: tabstop=2 shiftwidth=2 softtabstop=2
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
@@ -129,7 +128,7 @@ int main(int argc, char* argv[]) {
   // execute raytrace process
   RT_IINFO("ray-tracing in progress...");
   clock_t start = clock();
-  RT_Bitmap *bmp=rtr_execute(scene, cam);
+  RT_Bitmap *bmp=rtSceneVisualize(scene, cam);
   if(errno>0) {
     RT_WARN("errno set by ray-trace process: %d, %s", errno, rtGetErrorDesc());
     errno = 0;
@@ -158,3 +157,5 @@ garbage_collect:
     return 0;
   }
 }
+
+// vim: tabstop=2 shiftwidth=2 softtabstop=2
