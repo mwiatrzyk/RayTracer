@@ -51,6 +51,75 @@ static int rtVoxelAddTriangle(RT_Voxel *v, RT_Triangle *t, int32_t bufsize) {
 }
 
 
+/* Initializes parameters used to traverse through voxel grid array. */
+static inline void rtUddTraverseInitialize(
+    RT_Udd *self, RT_Scene *scene, 
+    float *o, float *r, 
+    int32_t i, int32_t j, int32_t k,
+    float *dtx, float *tx, int32_t *di,
+    float *dty, float *ty, int32_t *dj,
+    float *dtz, float *tz, int32_t *dk) 
+{
+  // calculate voxel's planes
+  float x1 = scene->dmin[0] + i*self->s[0];
+  float x2 = x1 + self->s[0];
+  float y1 = scene->dmin[1] + j*self->s[1];
+  float y2 = y1 + self->s[1];
+  float z1 = scene->dmin[2] + k*self->s[2];
+  float z2 = z1 + self->s[2];
+  
+  // calculate dtx and tx
+  if(r[0] == 0.0f) {
+    *dtx = FLT_MAX;
+    *tx = 0.0f;
+  } else {
+    float dtx1 = (x1-o[0]) / r[0];
+    float dtx2 = (x2-o[0]) / r[0];
+    *dtx = rtAbs(dtx2 - dtx1);
+    *tx = dtx1<dtx2? dtx1: dtx2;
+  }
+  
+  // calculate dty and ty
+  if(r[1] == 0.0f) {
+    *dty = FLT_MAX;
+    *ty = 0.0f;
+  } else {
+    float dty1 = (y1-o[1]) / r[1]; 
+    float dty2 = (y2-o[1]) / r[1];
+    *dty = rtAbs(dty2 - dty1);
+    *ty = dty1<dty2? dty1: dty2;
+  }
+
+  //calculate dtz and tz
+  if(r[2] == 0.0f) {
+    *dtz = FLT_MAX;
+    *tz = 0.0f;
+  } else {
+    float dtz1 = (z1-o[2]) / r[2]; 
+    float dtz2 = (z2-o[2]) / r[2];
+    *dtz = rtAbs(dtz2 - dtz1);
+    *tz = dtz1<dtz2? dtz1: dtz2;
+  }
+  
+  // calculate di, dj and dk
+  if(r[0] > 0.0f) {
+    *di = 1;
+  } else {
+    *di = -1;
+  }
+  if(r[1] > 0.0f) {
+    *dj = 1;
+  } else {
+    *dj = -1;
+  }
+  if(r[2] > 0.0f) {
+    *dk = 1;
+  } else {
+    *dk = -1;
+  }
+}
+
+
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 RT_Udd* rtUddCreate(RT_Scene* scene) {
@@ -295,67 +364,20 @@ RT_Triangle* rtUddTraverse(
   float *o, float *r, 
   int32_t *i_, int32_t *j_, int32_t *k_)
 {
-  float dtx1, dtx2, dty1, dty2, dtz1, dtz2;
   float dtx, dty, dtz, tx, ty, tz;
   float tx_n, ty_n, tz_n;
   int32_t di, dj, dk;
   int32_t i=*i_, j=*j_, k=*k_;
-
-  // calculate voxel's planes
-  float x1 = scene->dmin[0] + i*self->s[0];
-  float x2 = x1 + self->s[0];
-  float y1 = scene->dmin[1] + j*self->s[1];
-  float y2 = y1 + self->s[1];
-  float z1 = scene->dmin[2] + k*self->s[2];
-  float z2 = z1 + self->s[2];
   
-  // calculate dtx, dty and dtz
-  if(r[0] == 0.0f) {
-    dtx = FLT_MAX;
-    tx = 0.0f;
-  } else {
-    dtx1=(x1-o[0])/r[0];
-    dtx2=(x2-o[0])/r[0];
-    dtx = rtAbs(dtx2 - dtx1);
-    tx = dtx1<dtx2? dtx1: dtx2;
-  }
-
-  if(r[1] == 0.0f) {
-    dty = FLT_MAX;
-    ty = 0.0f;
-  } else {
-    dty1=(y1-o[1])/r[1]; 
-    dty2=(y2-o[1])/r[1];
-    dty = rtAbs(dty2 - dty1);
-    ty = dty1<dty2? dty1: dty2;
-  }
-
-  if(r[2] == 0.0f) {
-    dtz = FLT_MAX;
-    tz = 0.0f;
-  } else {
-    dtz1=(z1-o[2])/r[2]; 
-    dtz2=(z2-o[2])/r[2];
-    dtz = rtAbs(dtz2 - dtz1);
-    tz = dtz1<dtz2? dtz1: dtz2;
-  }
-  
-  // calculate di, dj and dk
-  if(r[0] > 0.0f) {
-    di = 1;
-  } else {
-    di = -1;
-  }
-  if(r[1] > 0.0f) {
-    dj = 1;
-  } else {
-    dj = -1;
-  }
-  if(r[2] > 0.0f) {
-    dk = 1;
-  } else {
-    dk = -1;
-  }
+  /* Initialize traversal algorithm. */
+  rtUddTraverseInitialize(
+      self, scene,
+      o, r,
+      i, j, k,
+      &dtx, &tx, &di,
+      &dty, &ty, &dj,
+      &dtz, &tz, &dk
+  );
 
   /* Traverse through grid array. */
   while(1) {
@@ -382,7 +404,6 @@ RT_Triangle* rtUddTraverse(
         return nearest;
       }
     }
-    //RT_DEBUG("%d %d %d", i, j, k)
 
     // proceed to next voxel
     if ((tx_n=tx+dtx) < (ty_n=ty+dty)) {
