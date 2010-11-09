@@ -4,7 +4,7 @@
 #include "scene.h"
 #include "bitmap.h"
 
-RT_Bitmap* rtr_execute(RT_Scene *scene, RT_Camera *camera);
+RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera);
 
 #endif
 
