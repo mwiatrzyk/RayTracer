@@ -86,6 +86,12 @@ RT_Scene* rtSceneLoad(const char *filename) {
       
       // update minimal and maximal domain size
       for(k=0; k<3; k++) {
+        //FIXME: result is filled with salt & pepper without if..else below
+        if(v[i][k] > 0.0f) {    
+          v[i][k] += 0.00001f;
+        } else {
+          v[i][k] -= 0.00001f;
+        }
         if(v[i][k] < res->dmin[k]) res->dmin[k]=v[i][k];
         if(v[i][k] > res->dmax[k]) res->dmax[k]=v[i][k];
       }
