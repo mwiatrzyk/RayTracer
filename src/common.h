@@ -16,6 +16,19 @@
 #define CRITICAL  4   // critical error messages
 
 
+//// INLINE FUNCTIONS /////////////////////////////////////////
+
+/* Returns minimal of given two float values. */
+static inline float rtMinF(float a, float b) {
+  return a<b? a: b;
+}
+
+/* Return absolute value of given float number `x`. */
+static inline float rtAbs(float x) {
+  return x>=0.0f? x: -x;
+}
+
+
 //// MACROS ///////////////////////////////////////////////////
 
 /* Get minimal value of a, b and c. */
