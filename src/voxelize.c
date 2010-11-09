@@ -357,15 +357,17 @@ int rtUddFindStartupVoxel(
   return 0;
 }
 ///////////////////////////////////////////////////////////////
-RT_Triangle* rtUddTraverse(
+RT_Triangle* rtUddFindNearestTriangle(
   RT_Udd *self, RT_Scene *scene, 
   RT_Triangle *current,
   float *ipoint,
+  float *dmin,
   float *o, float *r, 
   int32_t *i_, int32_t *j_, int32_t *k_)
 {
   float dtx, dty, dtz, tx, ty, tz;
   float tx_n, ty_n, tz_n;
+  float d;
   int32_t di, dj, dk;
   int32_t i=*i_, j=*j_, k=*k_;
   
@@ -384,14 +386,14 @@ RT_Triangle* rtUddTraverse(
     // check intersections in current voxel
     RT_Voxel *voxel = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
     if(voxel->nt > 0) {
-      float d, dmin=MIN(tx+dtx, ty+dty, tz+dtz);
+      *dmin=MIN(tx+dtx, ty+dty, tz+dtz);
       RT_Triangle **t=voxel->t, **maxt=(RT_Triangle**)(voxel->t + voxel->nt);
       RT_Triangle *nearest=NULL;
       while(t < maxt) {
         if(*t != current) {
-          if((*t)->isint(*t, o, r, &d, &dmin)) {
-            if(d < dmin) {
-              dmin = d;
+          if((*t)->isint(*t, o, r, &d, dmin)) {
+            if(d < *dmin) {
+              *dmin = d;
               nearest = *t;
             }
           }
@@ -399,7 +401,7 @@ RT_Triangle* rtUddTraverse(
         t++;
       }
       if(nearest) {
-        rtVectorRaypoint(ipoint, o, r, dmin); //FIXME: move calculation of intersection point to intersection test function
+        rtVectorRaypoint(ipoint, o, r, *dmin); //FIXME: move calculation of intersection point to intersection test function
         *i_=i; *j_=j; *k_=k;
         return nearest;
       }

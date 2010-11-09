@@ -68,8 +68,11 @@ int rtUddFindStartupVoxel(
   int32_t *i, int32_t *j, int32_t *k
 );
 
-/* Traverser through grid of voxels to find nearest triangle the ray intersects
- * with and coordinations of such intersection point.
+/* Traverses through grid of voxels to find nearest triangle the ray
+ * intersects. Function returns pointer to RT_Triangle object (nearest triangle
+ * found) or NULL if ray does not intersect any triangle. Some more data is
+ * returned in parameters: ipoint (intersection point coordinates), [i,j,k]
+ * (voxel where intersection was found)
 
 :param: self: pointer to RT_Udd object
 :param: scene: pointer to RT_Scene object
@@ -79,10 +82,11 @@ int rtUddFindStartupVoxel(
 :param: o: ray origin point
 :param: r: normalized ray vector
 :param: i, j, k: indices of startup voxel */
-RT_Triangle* rtUddTraverse(
+RT_Triangle* rtUddFindNearestTriangle(
   RT_Udd *self, RT_Scene *scene, 
   RT_Triangle *current,
   float *ipoint,
+  float *dmin,
   float *o, float *r,
   int32_t *i, int32_t *j, int32_t *k
 );
