@@ -84,7 +84,7 @@ RT_Triangle* rtUddTraverse(
   RT_Triangle *current,
   float *ipoint,
   float *o, float *r,
-  int32_t i, int32_t j, int32_t k
+  int32_t *i, int32_t *j, int32_t *k
 );
 
 

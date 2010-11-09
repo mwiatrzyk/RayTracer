@@ -293,12 +293,13 @@ RT_Triangle* rtUddTraverse(
   RT_Triangle *current,
   float *ipoint,
   float *o, float *r, 
-  int32_t i, int32_t j, int32_t k)
+  int32_t *i_, int32_t *j_, int32_t *k_)
 {
   float dtx1, dtx2, dty1, dty2, dtz1, dtz2;
   float dtx, dty, dtz, tx, ty, tz;
   float tx_n, ty_n, tz_n;
   int32_t di, dj, dk;
+  int32_t i=*i_, j=*j_, k=*k_;
 
   // calculate voxel's planes
   float x1 = scene->dmin[0] + i*self->s[0];
@@ -377,6 +378,7 @@ RT_Triangle* rtUddTraverse(
       }
       if(nearest) {
         rtVectorRaypoint(ipoint, o, r, dmin); //FIXME: move calculation of intersection point to intersection test function
+        *i_=i; *j_=j; *k_=k;
         return nearest;
       }
     }

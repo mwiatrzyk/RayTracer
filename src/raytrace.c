@@ -76,7 +76,7 @@ static RT_Color rtRayTrace(
   
   /* Traverse through grid of voxels to find nearest triangle for further
    * shading processing. */
-  RT_Triangle *nearest = rtUddTraverse(udd, scene, current, onew, o, r, i, j, k);
+  RT_Triangle *nearest = rtUddTraverse(udd, scene, current, onew, o, r, &i, &j, &k);
   if(!nearest) {
     return res;
   }
