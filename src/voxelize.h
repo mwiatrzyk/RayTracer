@@ -68,6 +68,25 @@ int rtUddFindStartupVoxel(
   int32_t *i, int32_t *j, int32_t *k
 );
 
+/* Traverser through grid of voxels to find nearest triangle the ray intersects
+ * with and coordinations of such intersection point.
+
+:param: self: pointer to RT_Udd object
+:param: scene: pointer to RT_Scene object
+:param: current: pointer to current nearest triangle (NULL for primary rays)
+:param: dmin: pointer to value that will keep minimal distance to intersected
+  triangle
+:param: o: ray origin point
+:param: r: normalized ray vector
+:param: i, j, k: indices of startup voxel */
+RT_Triangle* rtUddTraverse(
+  RT_Udd *self, RT_Scene *scene, 
+  RT_Triangle *current,
+  float *ipoint,
+  float *o, float *r,
+  int32_t i, int32_t j, int32_t k
+);
+
 
 #endif
 

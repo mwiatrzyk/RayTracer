@@ -67,14 +67,16 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
 
   // calculate domain size
   for(k=0; k<3; k++) {
-    ds[k] = scene->dmax[k] - scene->dmin[k] + 0.001f;
+    scene->dmin[k] -= 0.001f; 
+    scene->dmax[k] += 0.001f;
+    ds[k] = scene->dmax[k] - scene->dmin[k] + 0.001;
   }
   RT_DEBUG("domain size: x=%.3f, y=%.3f, z=%.3f", ds[0], ds[1], ds[2]);
   RT_DEBUG("domain size min: x=%.3f, y=%.3f, z=%.3f", scene->dmin[0], scene->dmin[1], scene->dmin[2]);
   RT_DEBUG("domain size max: x=%.3f, y=%.3f, z=%.3f", scene->dmax[0], scene->dmax[1], scene->dmax[2]);
   
   // calculate grid size and size of single element of grid
-  v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f);
+  v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f) + 0.001f;
   for(k=0; k<3; k++) {
     tmp = ceil(ds[k]*v);  // number of grid elements in k-direction
     res->nv[k] = tmp;
@@ -284,6 +286,122 @@ int rtUddFindStartupVoxel(
     return 1;
 
   return 0;
+}
+///////////////////////////////////////////////////////////////
+RT_Triangle* rtUddTraverse(
+  RT_Udd *self, RT_Scene *scene, 
+  RT_Triangle *current,
+  float *ipoint,
+  float *o, float *r, 
+  int32_t i, int32_t j, int32_t k)
+{
+  float dtx1, dtx2, dty1, dty2, dtz1, dtz2;
+  float dtx, dty, dtz, tx, ty, tz;
+  float tx_n, ty_n, tz_n;
+  int32_t di, dj, dk;
+
+  // calculate voxel's planes
+  float x1 = scene->dmin[0] + i*self->s[0];
+  float x2 = x1 + self->s[0];
+  float y1 = scene->dmin[1] + j*self->s[1];
+  float y2 = y1 + self->s[1];
+  float z1 = scene->dmin[2] + k*self->s[2];
+  float z2 = z1 + self->s[2];
+  
+  // calculate dtx, dty and dtz
+  if(r[0] == 0.0f) {
+    dtx = FLT_MAX;
+    tx = 0.0f;
+  } else {
+    dtx1=(x1-o[0])/r[0];
+    dtx2=(x2-o[0])/r[0];
+    dtx = rtAbs(dtx2 - dtx1);
+    tx = dtx1<dtx2? dtx1: dtx2;
+  }
+
+  if(r[1] == 0.0f) {
+    dty = FLT_MAX;
+    ty = 0.0f;
+  } else {
+    dty1=(y1-o[1])/r[1]; 
+    dty2=(y2-o[1])/r[1];
+    dty = rtAbs(dty2 - dty1);
+    ty = dty1<dty2? dty1: dty2;
+  }
+
+  if(r[2] == 0.0f) {
+    dtz = FLT_MAX;
+    tz = 0.0f;
+  } else {
+    dtz1=(z1-o[2])/r[2]; 
+    dtz2=(z2-o[2])/r[2];
+    dtz = rtAbs(dtz2 - dtz1);
+    tz = dtz1<dtz2? dtz1: dtz2;
+  }
+  
+  // calculate di, dj and dk
+  if(r[0] > 0.0f) {
+    di = 1;
+  } else {
+    di = -1;
+  }
+  if(r[1] > 0.0f) {
+    dj = 1;
+  } else {
+    dj = -1;
+  }
+  if(r[2] > 0.0f) {
+    dk = 1;
+  } else {
+    dk = -1;
+  }
+
+  /* Traverse through grid array. */
+  while(1) {
+    // check intersections in current voxel
+    RT_Voxel *voxel = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
+    if(voxel->nt > 0) {
+      float d, dmin=MIN(tx+dtx, ty+dty, tz+dtz);
+      RT_Triangle **t=voxel->t, **maxt=(RT_Triangle**)(voxel->t + voxel->nt);
+      RT_Triangle *nearest=NULL;
+      while(t < maxt) {
+        if(*t != current) {
+          if((*t)->isint(*t, o, r, &d, &dmin)) {
+            if(d < dmin) {
+              dmin = d;
+              nearest = *t;
+            }
+          }
+        }
+        t++;
+      }
+      if(nearest) {
+        rtVectorRaypoint(ipoint, o, r, dmin); //FIXME: move calculation of intersection point to intersection test function
+        return nearest;
+      }
+    }
+    //RT_DEBUG("%d %d %d", i, j, k)
+
+    // proceed to next voxel
+    if ((tx_n=tx+dtx) < (ty_n=ty+dty)) {
+      if (tx_n < (tz_n=tz+dtz)) { 
+        i+=di; tx=tx_n;
+      } else {
+        k+=dk; tz=tz_n;
+      }
+    } else {
+      if (ty_n < (tz_n=tz+dtz)) {
+        j+=dj; ty=ty_n;
+      } else {
+        k+=dk; tz=tz_n;
+      }
+    }
+
+    // termination check
+    if(i<0 || i>=self->nv[0]) return NULL;
+    if(j<0 || j>=self->nv[1]) return NULL;
+    if(k<0 || k>=self->nv[2]) return NULL;
+  }
 }
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2
