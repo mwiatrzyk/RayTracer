@@ -242,7 +242,7 @@ RT_Light* rtLightLoad(const char *filename, uint32_t *n) {
     } else {
       sscanf(line, 
              "%f %f %f %f %f %f %f", 
-             &res[i].p[0], &res[i].p[1], &res[i].p[2], &res[i].flux, &res[i].color.r, &res[i].color.g, &res[i].color.b);
+             &res[i].p[0], &res[i].p[1], &res[i].p[2], &res[i].flux, &res[i].color.c[0], &res[i].color.c[1], &res[i].color.c[2]);
       i++;
     }
   }
@@ -311,13 +311,13 @@ RT_Surface* rtSurfaceLoad(const char *filename, uint32_t *n) {
             res[i].ka = tmp;
             break;
           case 4:
-            res[i].color.r = tmp;
+            res[i].color.c[0] = tmp;
             break;
           case 5:
-            res[i].color.g = tmp;
+            res[i].color.c[1] = tmp;
             break;
           case 6:
-            res[i].color.b = tmp;
+            res[i].color.c[2] = tmp;
             break;
           case 7: 
             res[i].kt = tmp;

@@ -29,7 +29,7 @@ static RT_Color rtRayTrace(
     float total_flux, uint32_t level,
     int32_t i, int32_t j, int32_t k) 
 {
-  RT_Color res={0.0f, 0.0f, 0.0f, 0.0f}, tmp, rcolor;
+  RT_Color res={{0.0f, 0.0f, 0.0f, 0.0f}}, tmp, rcolor;
   RT_Vertex4f onew, rnew, rray, tmpv, norm;
   float dmin, df, rf, n_dot_lo, dm;
 
@@ -46,20 +46,22 @@ static RT_Color rtRayTrace(
   }
 
   // initialize result color with ambient color
-  iml_color_scale(&res, &nearest->s->color, nearest->s->ka * total_flux);
+  if(nearest->s->ka > 0.0f) {
+    rtVectorMul(res.c, nearest->s->color.c, nearest->s->ka * total_flux);
+  }
 
   // rtRayTrace reflected ray
   if(nearest->s->kr > 0.0f) {
     rtVectorRayReflected(rray, nearest->n, rtVectorInverse(tmpv, r));
     rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k);
-    iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kr));
+    rtVectorAdd(res.c, res.c, rtVectorMul(rcolor.c, rcolor.c, nearest->s->kr));
   }
 
   // rtRayTrace refracted ray
   if(nearest->s->kt > 0.0f) {
     rtVectorRayRefracted(rray, nearest->n, rtVectorInverse(tmpv, r), nearest->s->eta);
     rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k);
-    iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kt));
+    rtVectorAdd(res.c, res.c, rtVectorMul(rcolor.c, rcolor.c, nearest->s->kt));
   }
 
   // calculate color at intersection point
@@ -84,9 +86,9 @@ static RT_Color rtRayTrace(
 
       // calculate color
       dm = rtVectorDistance(onew, l->p);
-      iml_color_add(&tmp, &l->color, &nearest->s->color);
-      iml_color_scale(&tmp, &tmp, l->flux*(df+rf)/(dm+0.001f));
-      iml_color_add(&res, &res, &tmp);
+      rtVectorAdd(tmp.c, l->color.c, nearest->s->color.c);
+      rtVectorMul(tmp.c, tmp.c, l->flux*(df+rf)/(dm+0.001f));
+      rtVectorAdd(res.c, res.c, tmp.c);
     }
     l++;
   }
@@ -153,13 +155,13 @@ RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera) {
       );
 
       /* Normalize color */
-      iml_color_scale(&sum, &sum, 255.0f/total_flux);
+      rtVectorMul(sum.c, sum.c, 255.0f/total_flux);
 
       /* Write pixel onto bitmap */
       rtBitmapSetPixel(res, (int32_t)x, (int32_t)y,
-          rtColorBuildRGBA(sum.r>=0.0f ? (sum.r<=255.0f ? sum.r : 255.0f) : 0.0f,
-                           sum.g>=0.0f ? (sum.g<=255.0f ? sum.g : 255.0f) : 0.0f,
-                           sum.b>=0.0f ? (sum.b<=255.0f ? sum.b : 255.0f) : 0.0f, 0));
+          rtColorBuildRGBA(sum.c[0]>=0.0f ? (sum.c[0]<=255.0f ? sum.c[0] : 255.0f) : 0.0f,
+                           sum.c[1]>=0.0f ? (sum.c[1]<=255.0f ? sum.c[1] : 255.0f) : 0.0f,
+                           sum.c[2]>=0.0f ? (sum.c[2]<=255.0f ? sum.c[2] : 255.0f) : 0.0f, 0));
     }
   }
   

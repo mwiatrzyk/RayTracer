@@ -47,33 +47,11 @@ typedef struct _RT_Bitmap {
   uint32_t *pixels;       //bitmap pixel array
 } RT_Bitmap;
 
-/* Object that represents color in [0..1] float range. */
+/* Object that represents RGBA color vector. */
 typedef struct _RT_Color {
-  float r, g, b, a;
+  float c[4];  // color (c[0]=R, c[1]=G, c[2]=B, c[3]=A)
 } RT_Color;
 
-
-//// INLINE COLOR FUNCTIONS ///////////////////////////////////
-
-/* Scale color by given constant and store result in `self`. 
-
-   @param: self: pointer to result object
-   @param: color: pointer to object to be scaled
-   @param: scale: scale value */
-static inline RT_Color* iml_color_scale(RT_Color *self, RT_Color *color, float scale) {
-  self->r = scale * color->r;
-  self->g = scale * color->g;
-  self->b = scale * color->b;
-  return self;
-}
-
-/* Add colors `a` and `b` and store result in color `self`. */
-static inline RT_Color* iml_color_add(RT_Color *self, RT_Color *a, RT_Color *b) {
-  self->r = a->r + b->r;
-  self->g = a->g + b->g;
-  self->b = a->b + b->b;
-  return self;
-}
 
 //// INLINE BITMAP FUNCTIONS //////////////////////////////////
 
