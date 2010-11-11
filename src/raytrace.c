@@ -8,42 +8,6 @@
 #include "common.h"
 
 
-/* Shadow test. */
-static int is_shadow(RT_Triangle *t, RT_Triangle *maxt, RT_Triangle *current, float *o, float *r, float *l) {
-  int i;
-  float d, dmax=rtVectorDistance(o, l), dmin=FLT_MAX;
-  float min[4];
-  float max[4];
-
-  for(i=0; i<3; i++) {
-    if(o[i] < l[i]) {
-      min[i]=o[i]; max[i]=l[i];
-    } else {
-      min[i]=l[i]; max[i]=o[i];
-    }
-  }
-
-  while(t < maxt) {
-    if(t != current) {
-      if(t->i[0]<min[0] && t->j[0]<min[0] && t->k[0]<min[0]) {t++; continue;}
-      if(t->i[0]>max[0] && t->j[0]>max[0] && t->k[0]>max[0]) {t++; continue;}
-      if(t->i[1]<min[1] && t->j[1]<min[1] && t->k[1]<min[0]) {t++; continue;}
-      if(t->i[1]>max[1] && t->j[1]>max[1] && t->k[1]>max[0]) {t++; continue;}
-      if(t->i[2]<min[2] && t->j[2]<min[2] && t->k[2]<min[0]) {t++; continue;}
-      if(t->i[2]>max[2] && t->j[2]>max[2] && t->k[2]>max[0]) {t++; continue;}
-      if(t->isint(t, o, r, &d, &dmin)) {
-        if(d < dmax) {
-          return 1;
-        }
-      }
-    }
-    t++;
-  }
-
-  return 0;
-}
-
-
 /* Implementation of RayTracing algorithm.
 
 :param: scene: pointer to scene object
@@ -85,7 +49,7 @@ static RT_Color rtRayTrace(
   iml_color_scale(&res, &nearest->s->color, nearest->s->ka * total_flux);
 
   // rtRayTrace reflected ray
-  /*if(nearest->s->kr > 0.0f) {
+  if(nearest->s->kr > 0.0f) {
     rtVectorRayReflected(rray, nearest->n, rtVectorInverse(tmpv, r));
     rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k);
     iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kr));
@@ -96,14 +60,15 @@ static RT_Color rtRayTrace(
     rtVectorRayRefracted(rray, nearest->n, rtVectorInverse(tmpv, r), nearest->s->eta);
     rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k);
     iml_color_add(&res, &res, iml_color_scale(&rcolor, &rcolor, nearest->s->kt));
-  }*/
+  }
 
   // calculate color at intersection point
   while(l < maxl) {
     df = rf = 0.0f;
     rtVectorRay(rnew, onew, l->p);
 
-    if(!is_shadow(t, maxt, nearest, onew, rnew, l->p)) {
+    //if(!is_shadow(t, maxt, nearest, onew, rnew, l->p)) {
+    if(!rtUddFindShadow(udd, scene, nearest, onew, l->p)) {
       n_dot_lo = rtVectorDotp(nearest->n, rnew);
 
       // diffusion factor

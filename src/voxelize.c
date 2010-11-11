@@ -390,12 +390,10 @@ RT_Triangle* rtUddFindNearestTriangle(
       RT_Triangle **t=voxel->t, **maxt=(RT_Triangle**)(voxel->t + voxel->nt);
       RT_Triangle *nearest=NULL;
       while(t < maxt) {
-        if(*t != current) {
-          if((*t)->isint(*t, o, r, &d, dmin)) {
-            if(d < *dmin) {
-              *dmin = d;
-              nearest = *t;
-            }
+        if((*t)->isint(*t, o, r, &d, dmin)) {
+          if(*t != current && d < *dmin) {
+            *dmin = d;
+            nearest = *t;
           }
         }
         t++;
@@ -426,6 +424,99 @@ RT_Triangle* rtUddFindNearestTriangle(
     if(i<0 || i>=self->nv[0]) return NULL;
     if(j<0 || j>=self->nv[1]) return NULL;
     if(k<0 || k>=self->nv[2]) return NULL;
+  }
+}
+///////////////////////////////////////////////////////////////
+RT_Triangle* rtUddFindShadow(
+  RT_Udd *self, RT_Scene *scene,
+  RT_Triangle *current,
+  float *a, float *b) 
+{
+  int32_t aidx[3], bidx[3];
+  int32_t min[3], max[3];
+  float tx, dtx, ty, dty, tz, dtz;
+  float tx_n, ty_n, tz_n;
+  int32_t di, dj, dk;
+  int32_t i, j, k;
+  float d, dmin=FLT_MAX, dmax;
+  int c;
+  RT_Vertex4f r;
+
+  // calculate distance between points
+  dmax = rtVectorDistance(a, b);
+
+  // find voxel for point `a`
+  if(!rtVertexGetVoxel(scene, self, a, &aidx[0], &aidx[1], &aidx[2])) {
+    RT_ERROR("rtUddFindShadow(): vertex `a` outside of domain: x=%.3f, y=%.3f, z=%.3f", a[0], a[1], a[2])
+    return NULL;
+  }
+
+  // find voxel for point `b`
+  if(!rtVertexGetVoxel(scene, self, b, &bidx[0], &bidx[1], &bidx[2])) {
+    RT_ERROR("rtUddFindShadow(): vertex `b` outside of domain: x=%.3f, y=%.3f, z=%.3f", b[0], b[1], b[2])
+    return NULL;
+  }
+
+  // calculate normalized ray vector from vertex `a` to vertex `b`
+  rtVectorRay(r, a, b);
+
+  // calculate minimal and maximal voxel
+  for(c=0; c<3; c++) {
+    if(aidx[c] < bidx[c]) {
+      min[c] = aidx[c];
+      max[c] = bidx[c];
+    } else {
+      min[c] = bidx[c];
+      max[c] = aidx[c];
+    }
+  }
+
+  // initialize traversal grid
+  i=aidx[0]; j=aidx[1]; k=aidx[2];
+  rtUddTraverseInitialize(
+      self, scene,
+      a, r,
+      i, j, k,
+      &dtx, &tx, &di,
+      &dty, &ty, &dj,
+      &dtz, &tz, &dk
+  );
+
+  // traverse
+  while(1) {
+    // check intersections in current voxel
+    RT_Voxel *voxel = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
+    if(voxel->nt > 0) {
+      RT_Triangle **t=voxel->t, **maxt=(RT_Triangle**)(voxel->t + voxel->nt);
+      while(t < maxt) {
+        if((*t)->isint(*t, a, r, &d, &dmin)) {
+          if(*t != current && d < dmax) {
+            return *t;
+          }
+        }
+        t++;
+      }
+    }
+
+    // proceed to next voxel
+    if ((tx_n=tx+dtx) < (ty_n=ty+dty)) {
+      if (tx_n < (tz_n=tz+dtz)) { 
+        i+=di; tx=tx_n;
+      } else {
+        k+=dk; tz=tz_n;
+      }
+    } else {
+      if (ty_n < (tz_n=tz+dtz)) {
+        j+=dj; ty=ty_n;
+      } else {
+        k+=dk; tz=tz_n;
+      }
+    }
+
+    // termination check
+    if(i<min[0] || i>max[0]) return NULL;
+    if(j<min[1] || j>max[1]) return NULL;
+    if(k<min[2] || k>max[2]) return NULL;
   }
 }
 

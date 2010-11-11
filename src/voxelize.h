@@ -91,6 +91,21 @@ RT_Triangle* rtUddFindNearestTriangle(
   int32_t *i, int32_t *j, int32_t *k
 );
 
+/* Returns first found triangle that is intersected by ray that starts at
+ * vertex `a` and is directed towards vertex `b` (the light location). When
+ * such triangle is found, point `a` is said to be "in shadow" of found
+ * triangle. 
+
+:param: self: pointer to RT_Udd object
+:param: scene: pointer to RT_Scene object
+:param: current: pointer to triangle that point `a` belongs to
+:param: a: intersection point tested against shadow
+:param: b: light location */
+RT_Triangle* rtUddFindShadow(
+  RT_Udd *self, RT_Scene *scene,
+  RT_Triangle *current,
+  float *a, float *b
+);
 
 #endif
 
