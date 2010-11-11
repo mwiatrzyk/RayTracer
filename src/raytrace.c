@@ -99,8 +99,9 @@ static RT_Color rtRayTrace(
 ///////////////////////////////////////////////////////////////
 RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera) {
   int32_t i, j, k;
-  float x, y, dx, dy, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=1.0f;
-  float *a=camera->ul, *b=camera->ur, *c=camera->bl, *o=camera->ob;
+  float x, y, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=1.0f;
+  float h_inv=1.0f/h, w_inv=1.0f/w;
+  RT_Vertex4f ray;
   RT_Bitmap *res = rtBitmapCreate(camera->sw, camera->sh, 0);
   
   /* 1st step: Preprocess scene. 
@@ -131,26 +132,23 @@ RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera) {
    * generated primary rays. */
   for(y=0.0f; y<h; y+=1.0f) {
     for(x=0.0f; x<w; x+=1.0f) {
-      /* Calculate primary ray direction vector and normalize it. */
-      float x_coef=(x+dx)/w, y_coef=(y+dy)/h;
-      float ray[4] = {
-        x_coef*(b[0] - a[0]) + y_coef*(c[0] - a[0]) + a[0] - o[0],
-        x_coef*(b[1] - a[1]) + y_coef*(c[1] - a[1]) + a[1] - o[1],
-        x_coef*(b[2] - a[2]) + y_coef*(c[2] - a[2]) + a[2] - o[2],
-        0.0f
-      };
-      rtVectorNorm(ray);
+      // calculate primary ray direction vector
+      rtVectorPrimaryRay(
+          ray,
+          camera->ul, camera->ur, camera->bl, camera->ob,
+          x, y, w_inv, h_inv
+      );
       
-      /* Calculate startup (i,j,k) voxel coordinates for current primary ray. */
-      if(!rtUddFindStartupVoxel(udd, scene, o, ray, &i, &j, &k))
+      // calculate startup/entry voxel for primary ray
+      if(!rtUddFindStartupVoxel(udd, scene, camera->ob, ray, &i, &j, &k))
         continue;
 
-      /* Trace current ray and calculate color of current pixel. */
+      // trace current ray and calculate color of current pixel.
       RT_Color sum = rtRayTrace(
         scene, udd,
         scene->t, (RT_Triangle*)(scene->t+scene->nt), NULL,
         scene->l, (RT_Light*)(scene->l+scene->nl),
-        o, ray, total_flux, 10,
+        camera->ob, ray, total_flux, 10,
         i, j, k
       );
 

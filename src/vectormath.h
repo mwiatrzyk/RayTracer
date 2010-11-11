@@ -88,6 +88,27 @@ static inline float rtVectorDotp(float *a, float *b) {
   return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
+/* Calculates normalized primary ray direction vector.
+
+:param: out: output buffer
+:param: ul: screen's "upper left" corner position
+:param: ur: screen's "upper right" corner position 
+:param: bl: screen's "bottom left" corner position 
+:param: o: observer location 
+:param: x, y: screen pixel coords 
+:param: w_inv, h_inv: inversions of screen width and height */
+static inline float* rtVectorPrimaryRay(
+    float *out, 
+    float *ul, float *ur, float *bl, float *o, 
+    float x, float y, float w_inv, float h_inv) 
+{
+  float x_coef=x*w_inv, y_coef=y*h_inv;
+  out[0] = x_coef*(ur[0] - ul[0]) + y_coef*(bl[0] - ul[0]) + ul[0] - o[0];
+  out[1] = x_coef*(ur[1] - ul[1]) + y_coef*(bl[1] - ul[1]) + ul[1] - o[1];
+  out[2] = x_coef*(ur[2] - ul[2]) + y_coef*(bl[2] - ul[2]) + ul[2] - o[2];
+  return rtVectorNorm(out);
+}
+
 /* Calculates normalized ray vector pointing from `a` towards `b` and stores
  * result in `out`. Returns `out`. */
 static inline float* rtVectorRay(float *out, float *a, float *b) {
