@@ -99,25 +99,44 @@ static RT_Color rtRayTrace(
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera) {
+RT_VisualizedScene* rtVisualizedSceneRaytrace(RT_Scene *scene, RT_Camera *camera) {
   int32_t i, j, k;
-  float x, y, w=camera->sw, h=camera->sh, total_flux=3000.0f, samples=1.0f;
+  int32_t x, y, w=camera->sw, h=camera->sh;
   float h_inv=1.0f/h, w_inv=1.0f/w;
   RT_Vertex4f ray;
-  RT_Bitmap *res = rtBitmapCreate(camera->sw, camera->sh, 0);
+  RT_Color color;
   
-  /* 1st step: Preprocess scene. 
-   * At this point constant triangle coefficients are calculated and correct
-   * ray->triangle intersection function is assigned. */
+  /* Create result object that will hold processed scene in unnormalized
+   * format. */
+  RT_VisualizedScene *res = malloc(sizeof(RT_VisualizedScene));
+  if(res) {
+    res->width = w;
+    res->height = h;
+    for(k=0; k<4; k++) {
+      res->min.c[k] = FLT_MAX;
+      res->max.c[k] = FLT_MIN;
+    }
+    res->map = malloc(camera->sw*camera->sh*sizeof(RT_Color));
+    if(!res->map) {
+      rtVisualizedSceneDestroy(&res);
+      errno = E_MEMORY;
+      return NULL;
+    }
+  } else {
+    errno = E_MEMORY;
+    return NULL;
+  }
+
+  /* At this point constant triangle coefficients are
+   * calculated and correct ray->triangle intersection function is assigned. */
   rtScenePreprocess(scene, camera);
 
-  /* 2nd step: Calculate uniform domain division.
-   * At this step scene is divided into voxels and each triangle in scene is
+  /* At this step scene is divided into voxels and each triangle in scene is
    * assigned to all voxels it belongs to. */
   RT_Udd *udd = rtUddCreate(scene);
   if(!udd) {
+    rtVisualizedSceneDestroy(&res);
     errno = E_MEMORY;
-    rtBitmapDestroy(&res);
     return NULL;
   }
   
@@ -125,15 +144,11 @@ RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera) {
   rtUddVoxelize(udd, scene);
   RT_IINFO("...voxelization finished");
   
-  // calculate total flux of all lights
-  /*for(i=0; i<scene->nt; i++) {
-    total_flux += scene->l[i].flux;
-    }*/
 
-  /* 3rd step: Generate primary rays and execute rtRayTrace procedure for each of
+  /* Generate primary rays and execute rtRayTrace procedure for each of
    * generated primary rays. */
-  for(y=0.0f; y<h; y+=1.0f) {
-    for(x=0.0f; x<w; x+=1.0f) {
+  for(y=0; y<h; y++) {
+    for(x=0; x<w; x++) {
       // calculate primary ray direction vector
       rtVectorPrimaryRay(
           ray,
@@ -146,27 +161,67 @@ RT_Bitmap* rtSceneVisualize(RT_Scene *scene, RT_Camera *camera) {
         continue;
 
       // trace current ray and calculate color of current pixel.
-      RT_Color sum = rtRayTrace(
+      color = rtRayTrace(
         scene, udd,
         scene->t, (RT_Triangle*)(scene->t+scene->nt), NULL,
         scene->l, (RT_Light*)(scene->l+scene->nl),
-        camera->ob, ray, total_flux, 10,
+        camera->ob, ray, 3000.0f, 10,
         i, j, k
       );
+      
+      // update minimal and maximal color
+      for(k=0; k<3; k++) {
+        if(color.c[k] > res->max.c[k]) res->max.c[k]=color.c[k];
+        if(color.c[k] < res->min.c[k]) res->min.c[k]=color.c[k];
+      }
 
-      /* Normalize color */
-      rtVectorMul(sum.c, sum.c, 255.0f/total_flux);
-
-      /* Write pixel onto bitmap */
-      rtBitmapSetPixel(res, (int32_t)x, (int32_t)y,
-          rtColorBuildRGBA(sum.c[0]>=0.0f ? (sum.c[0]<=255.0f ? sum.c[0] : 255.0f) : 0.0f,
-                           sum.c[1]>=0.0f ? (sum.c[1]<=255.0f ? sum.c[1] : 255.0f) : 0.0f,
-                           sum.c[2]>=0.0f ? (sum.c[2]<=255.0f ? sum.c[2] : 255.0f) : 0.0f, 0));
+      // save pixel color (not normalized)
+      rtVisualizedSceneSetPixel(res, x, y, &color);
     }
   }
   
+  RT_INFO("minimal color (not normalized): R=%.3f, G=%.3f, B=%.3f", res->min.c[0], res->min.c[1], res->min.c[2])
+  RT_INFO("maximal color (not normalized): R=%.3f, G=%.3f, B=%.3f", res->max.c[0], res->max.c[1], res->max.c[2])
+
   // release memory occupied by domain division structures
   rtUddDestroy(&udd);
+
+  return res;
+}
+///////////////////////////////////////////////////////////////
+void rtVisualizedSceneDestroy(RT_VisualizedScene **self) {
+  RT_VisualizedScene *ptr=*self;
+  if(ptr) {
+    if(ptr->map) free(ptr->map);
+    free(ptr);
+    *self = NULL;
+  }
+}
+///////////////////////////////////////////////////////////////
+RT_Bitmap* rtVisualizedSceneToBitmap(RT_VisualizedScene *s) {
+  RT_Bitmap *res = rtBitmapCreate(s->width, s->height, 0);
+  if(!res)
+    return NULL;
+
+  int k;
+  float r, g, b, delta[3];
+  uint32_t *p=res->pixels, *maxp=(res->pixels + s->width*s->height);
+  RT_Color *m=s->map;
+
+  // calculate differences between minimal and maximal colors
+  for(k=0; k<3; k++) {
+    delta[k] = 255.0f / (s->max.c[k] - s->min.c[k]);
+  }
+
+  // iterate through each pixel of image and calculate color by scaling to
+  // 0..255 range
+  while(p < maxp) {
+    r = (m->c[0] - s->min.c[0]) * delta[0];
+    g = (m->c[1] - s->min.c[1]) * delta[1];
+    b = (m->c[2] - s->min.c[2]) * delta[2];
+    *p = rtColorBuildRGBA(r, g, b, 0);
+    p++; m++;
+  }
 
   return res;
 }

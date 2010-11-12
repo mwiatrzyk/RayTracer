@@ -128,21 +128,24 @@ int main(int argc, char* argv[]) {
   // execute raytrace process
   RT_IINFO("ray-tracing in progress...");
   clock_t start = clock();
-  RT_Bitmap *bmp=rtSceneVisualize(scene, cam);
+  RT_VisualizedScene *vs = rtVisualizedSceneRaytrace(scene, cam);
   if(errno>0) {
     RT_WARN("errno set by ray-trace process: %d, %s", errno, rtGetErrorDesc());
     errno = 0;
   }
   RT_INFO("...ray-tracing done. Time taken: %.3f seconds", (double)(clock()-start)/CLOCKS_PER_SEC);
 
-  // save result bitmap
+  // create and save result bitmap
   RT_INFO("creating result image: %s", o);
+  RT_Bitmap *bmp = rtVisualizedSceneToBitmap(vs);
   rtBitmapSave(bmp, o, 24);
   rtBitmapDestroy(&bmp);
+  rtVisualizedSceneDestroy(&vs);
   if(errno>0) {
     RT_ERROR("problem while creating result image: %d, %s", errno, rtGetErrorDesc());
     goto garbage_collect;
   }
+  RT_IINFO("all done.")
 
 garbage_collect:
   rtStringDestroy(&g);

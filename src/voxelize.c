@@ -140,9 +140,9 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
     scene->dmax[k] += 0.001f;
     ds[k] = scene->dmax[k] - scene->dmin[k] + 0.001;
   }
-  RT_DEBUG("domain size: x=%.3f, y=%.3f, z=%.3f", ds[0], ds[1], ds[2]);
-  RT_DEBUG("domain size min: x=%.3f, y=%.3f, z=%.3f", scene->dmin[0], scene->dmin[1], scene->dmin[2]);
-  RT_DEBUG("domain size max: x=%.3f, y=%.3f, z=%.3f", scene->dmax[0], scene->dmax[1], scene->dmax[2]);
+  RT_INFO("domain size: x=%.3f, y=%.3f, z=%.3f", ds[0], ds[1], ds[2]);
+  RT_INFO("domain size min: x=%.3f, y=%.3f, z=%.3f", scene->dmin[0], scene->dmin[1], scene->dmin[2]);
+  RT_INFO("domain size max: x=%.3f, y=%.3f, z=%.3f", scene->dmax[0], scene->dmax[1], scene->dmax[2]);
   
   // calculate grid size and size of single element of grid
   v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f) + 0.001f;
@@ -151,10 +151,10 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
     res->nv[k] = tmp;
     res->s[k] = ds[k]/tmp;  // size of voxel in k-direction
   }
-  RT_DEBUG("number of voxels: i=%d, j=%d, k=%d", res->nv[0], res->nv[1], res->nv[2]);
-  RT_DEBUG("total number of voxels: %d", res->nv[0]*res->nv[1]*res->nv[2]);
-  RT_DEBUG("total number of triangles: %d", scene->nt);
-  RT_DEBUG("size of single voxel: i=%.3f, j=%.3f, k=%.3f", res->s[0], res->s[1], res->s[2]);
+  RT_INFO("number of voxels: i=%d, j=%d, k=%d", res->nv[0], res->nv[1], res->nv[2]);
+  RT_INFO("total number of voxels: %d", res->nv[0]*res->nv[1]*res->nv[2]);
+  RT_INFO("total number of triangles: %d", scene->nt);
+  RT_INFO("size of single voxel: i=%.3f, j=%.3f, k=%.3f", res->s[0], res->s[1], res->s[2]);
 
   // create voxel grid array
   tmp = res->nv[0] * res->nv[1] * res->nv[2];
