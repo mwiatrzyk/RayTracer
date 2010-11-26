@@ -13,6 +13,10 @@ int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin);
  * intersection equation in 2D. */
 int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin);
 
+/* Checks if given point belongs to given triangle using same methods as in
+ * `rtInt1Test` function. */
+int rtInt1TestPoint(RT_Triangle *t, float *p);
+
 
 //// OTHER FUNCTIONS //////////////////////////////////////////
 

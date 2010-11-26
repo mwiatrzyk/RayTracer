@@ -84,8 +84,6 @@ int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
 
   return 1;
 }
-
-
 ///////////////////////////////////////////////////////////////
 int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
   float rdn = rtVectorDotp(r, t->n);
@@ -137,8 +135,19 @@ int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
 #endif*/
   return 1;
 }
+///////////////////////////////////////////////////////////////
+int rtInt1TestPoint(RT_Triangle *t, float *p) {
+  RT_Int1Coeffs *cf=&t->ic.i1;
 
+  float x = p[cf->xi];
+  float y = p[cf->yi];
 
+  if(cf->A[0]*x + cf->B[0]*y < -cf->C[0]) return 0;
+  if(cf->A[1]*x + cf->B[1]*y < -cf->C[1]) return 0;
+  if(cf->A[2]*x + cf->B[2]*y < -cf->C[2]) return 0;
+
+  return 1;
+}
 ///////////////////////////////////////////////////////////////
 void rtInt1CoeffsPrecalc(RT_Triangle *t) {
   RT_Int1Coeffs *cf=&t->ic.i1;
@@ -168,7 +177,7 @@ void rtInt1CoeffsPrecalc(RT_Triangle *t) {
   rtInt1CalcLineCoeffs(t->i, t->k, t->j, cf->xi, cf->yi, &cf->A[2], &cf->B[2], &cf->C[2]);
   
   // assign intersection test function
-  t->isint = &rtInt1Test;
+  t->isint = &rtInt0Test;
 }
 
 // vim: tabstop=2 shiftwidth=2 softtabstop=2
