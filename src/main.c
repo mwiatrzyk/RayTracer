@@ -32,7 +32,7 @@ void print_help(const char *executable) {
 
 
 /* Parse command line arguments. */
-int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, char **s, char **o) {
+int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, char **s, char **o, float *gamma, float *epsilon, float *distmod) {
   int i=1, alen;
   char *tmp, **dst=NULL;
   if(argc <= 1) {
@@ -54,6 +54,30 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
         dst = s;
       } else if(rtStringStartsWith(tmp, "-o")) {
         dst = o;
+      } else if(rtStringStartsWith(tmp, "-G")) {
+        if(alen == 2) {
+          sscanf(argv[++i], "%f", gamma);
+        } else {
+          sscanf((char*)(tmp+2), "%f", gamma);
+        }
+        i++;
+        continue;
+      } else if(rtStringStartsWith(tmp, "-E")) {
+        if(alen == 2) {
+          sscanf(argv[++i], "%f", epsilon);
+        } else {
+          sscanf((char*)(tmp+2), "%f", epsilon);
+        }
+        i++;
+        continue;
+      } else if(rtStringStartsWith(tmp, "-D")) {
+        if(alen == 2) {
+          sscanf(argv[++i], "%f", distmod);
+        } else {
+          sscanf((char*)(tmp+2), "%f", distmod);
+        }
+        i++;
+        continue;
       }
       if(alen == 2) {
         *dst = rtStringCopy(argv[++i]);
@@ -74,10 +98,11 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
 /* Bootstrap function */
 int main(int argc, char* argv[]) {
   char *g=NULL, *l=NULL, *a=NULL, *c=NULL, *s=NULL, *o=NULL;
+  float gamma=2.5f, epsilon=0.0f, distmod=2.0f;
   uint32_t n;
 
   // parse command line arguments
-  if(!parse_args(argc, argv, &g, &l, &a, &c, &s, &o)) {
+  if(!parse_args(argc, argv, &g, &l, &a, &c, &s, &o, &gamma, &epsilon, &distmod)) {
     goto garbage_collect;
   }
   if(errno>0) {
@@ -98,6 +123,10 @@ int main(int argc, char* argv[]) {
     RT_ERROR("unable to load scene geometry: %s", rtGetErrorDesc());
     goto garbage_collect;
   }
+  scene->simplified_shadows = epsilon > 0.0f? 1: 0;
+  scene->epsilon = epsilon;
+  scene->gamma = gamma;
+  scene->distmod = distmod;
 
   // load lights and add to scene
   RT_INFO("loading lights: %s", l);
@@ -137,7 +166,7 @@ int main(int argc, char* argv[]) {
 
   // create and save result bitmap
   RT_INFO("creating result image: %s", o);
-  RT_Bitmap *bmp = rtVisualizedSceneToBitmap(vs);
+  RT_Bitmap *bmp = rtVisualizedSceneToBitmap(vs, F_HDR, NULL);
   rtBitmapSave(bmp, o, 24);
   rtBitmapDestroy(&bmp);
   rtVisualizedSceneDestroy(&vs);
