@@ -68,6 +68,13 @@ int rtUddFindStartupVoxel(
   int32_t *i, int32_t *j, int32_t *k
 );
 
+/* Checks if given ray intersects given voxel. Returns 1 if so or 0 if not. */
+int rtUddCheckVoxelIntersection(
+    RT_Udd *self, RT_Scene *scene,
+    float *o, float *r,
+    int32_t i, int32_t j, int32_t k
+);
+
 /* Traverses through grid of voxels to find nearest triangle the ray
  * intersects. Function returns pointer to RT_Triangle object (nearest triangle
  * found) or NULL if ray does not intersect any triangle. Some more data is
@@ -100,11 +107,13 @@ RT_Triangle* rtUddFindNearestTriangle(
 :param: scene: pointer to RT_Scene object
 :param: current: pointer to triangle that point `a` belongs to
 :param: a: intersection point tested against shadow
-:param: b: light location */
+:param: l: light location
+:param: ts: modifier used to "darken" pixel due to shadow from semi-transparent
+  object */
 RT_Triangle* rtUddFindShadow(
   RT_Udd *self, RT_Scene *scene,
   RT_Triangle *current,
-  float *a, float *b
+  float *a, RT_Light *l, int32_t lindex, float *ts
 );
 
 #endif

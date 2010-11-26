@@ -1,5 +1,6 @@
 #include "voxelize.h"
 #include "vectormath.h"
+#include "intersection.h"
 #include "error.h"
 #include "common.h"
 #include <string.h>
@@ -145,7 +146,7 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
   RT_INFO("domain size max: x=%.3f, y=%.3f, z=%.3f", scene->dmax[0], scene->dmax[1], scene->dmax[2]);
   
   // calculate grid size and size of single element of grid
-  v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f) + 0.001f;
+  v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f)*2.0f + 0.001f;
   for(k=0; k<3; k++) {
     tmp = ceil(ds[k]*v);  // number of grid elements in k-direction
     res->nv[k] = tmp;
@@ -154,6 +155,7 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
   RT_INFO("number of voxels: i=%d, j=%d, k=%d", res->nv[0], res->nv[1], res->nv[2]);
   RT_INFO("total number of voxels: %d", res->nv[0]*res->nv[1]*res->nv[2]);
   RT_INFO("total number of triangles: %d", scene->nt);
+  RT_INFO("total number of lights: %d", scene->nl);
   RT_INFO("size of single voxel: i=%.3f, j=%.3f, k=%.3f", res->s[0], res->s[1], res->s[2]);
 
   // create voxel grid array
@@ -187,7 +189,7 @@ void rtUddDestroy(RT_Udd **self) {
 void rtUddVoxelize(RT_Udd *self, RT_Scene *scene) {
   const int32_t BUFSIZE = 10;  // number of space to add after each reallocation
   int32_t i, j, k;
-  float s1, s2;
+  RT_Vertex4f p;
   RT_Voxel *vptr=NULL;
   RT_Triangle *t=scene->t, *maxt=(RT_Triangle*)(scene->t + scene->nt), **tmp;
 
@@ -201,7 +203,7 @@ void rtUddVoxelize(RT_Udd *self, RT_Scene *scene) {
   
   // iterate through array of triangles
   while(t < maxt) {
-
+    //if(t->sid == 34) {t++; continue;}
     // calculate indices of voxels containing current triangle's vertices
     int32_t iidx[3], jidx[3], kidx[3];
     for(k=0; k<3; k++) {
@@ -225,13 +227,14 @@ void rtUddVoxelize(RT_Udd *self, RT_Scene *scene) {
       continue;
     }
 
-    //RT_DEBUG("imin=%d, jmin=%d, kmin=%d", min[0], min[1], min[2]);
-    //RT_DEBUG("imax=%d, jmax=%d, kmax=%d", max[0], max[1], max[2]);
-
     // loop through grid array
     for(i=min[0]; i<=max[0]; i++) {
       for(j=min[1]; j<=max[1]; j++) {
         for(k=min[2]; k<=max[2]; k++) {
+          // add triangle to current voxel
+          vptr = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
+          rtVoxelAddTriangle(vptr, t, BUFSIZE);
+          continue;
 
           /* Triangle is included in the voxel if at least one of following
            * alternatives is true:
@@ -245,41 +248,83 @@ void rtUddVoxelize(RT_Udd *self, RT_Scene *scene) {
           float z1 = scene->dmin[2] + k*self->s[2];
           float z2 = z1 + self->s[2];
 
-          /* Vertices of current voxel can now be calculated as follows:
-           * 1) Bottom vertices:
-           *    (x1,y1,z1) - close left
-           *    (x2,y1,z1) - close right
-           *    (x1,y1,z2) - far left
-           *    (x2,y1,z2) - far right 
-           * 2) Upper vertices:
-           *    Like above, but with y2 instead of y1. */
-          RT_Vertex4f bcl={x1, y1, z1, 0.0f}, bcr={x2, y1, z1, 0.0f};
-          RT_Vertex4f bfl={x1, y1, x2, 0.0f}, bfr={x2, y1, z2, 0.0f};
-          RT_Vertex4f ucl={x1, y2, z1, 0.0f}, ucr={x2, y2, z1, 0.0f};
-          RT_Vertex4f ufl={x1, y2, x2, 0.0f}, ufr={x2, y2, z2, 0.0f};
+          /* Calculate intersection points between triangle's plane and voxel's
+           * edges (x and z planes). */
+          float y11, y12, y21, y22;
+          if(t->n[1] != 0.0f) {
+            y11 = (-t->d - t->n[0]*x1 - t->n[2]*z1) / t->n[1];
+            y12 = (-t->d - t->n[0]*x1 - t->n[2]*z2) / t->n[1];
+            y21 = (-t->d - t->n[0]*x2 - t->n[2]*z1) / t->n[1];
+            y22 = (-t->d - t->n[0]*x2 - t->n[2]*z2) / t->n[1];
+          } else {
+            y11 = y12 = y21 = y22 = FLT_MAX;
+          }
+
+          /* Now do the same, but for y and z planes. */
+          float x11, x12, x21, x22;
+          if(t->n[0] != 0.0f) {
+            x11 = (-t->d - t->n[1]*y1 - t->n[2]*z1) / t->n[0];
+            x12 = (-t->d - t->n[1]*y1 - t->n[2]*z2) / t->n[0];
+            x21 = (-t->d - t->n[1]*y2 - t->n[2]*z1) / t->n[0];
+            x22 = (-t->d - t->n[1]*y2 - t->n[2]*z2) / t->n[0];
+          } else {
+            x11 = x12 = x21 = x22 = FLT_MAX;
+          }
+
+          /* And once again - for x and y planes. */
+          float z11, z12, z21, z22;
+          if(t->n[2] != 0.0f) {
+            z11 = (-t->d - t->n[0]*x1 - t->n[1]*y1) / t->n[2];
+            z12 = (-t->d - t->n[0]*x1 - t->n[1]*y2) / t->n[2];
+            z21 = (-t->d - t->n[0]*x2 - t->n[1]*y1) / t->n[2];
+            z22 = (-t->d - t->n[0]*x2 - t->n[1]*y2) / t->n[2];
+          } else {
+            z11 = z12 = z21 = z22 = FLT_MAX;
+          }
           
-          /* Apply voxel's corner nodes to triangle's plane equation and check
-           * signs of result. If at least one corner have different sign that
-           * any other then triangle's plane intersects voxel. */
-          s1 = rtVectorDotp(t->n, bcl) + t->d;
-          s2 = rtVectorDotp(t->n, bcr) + t->d;
-          if(s1*s2 > 0.0f) {  // if sign for both vertices is the same
-            s2 = rtVectorDotp(t->n, bfl) + t->d;
-            if(s1*s2 > 0.0f) {
-              s2 = rtVectorDotp(t->n, bfr) + t->d;
-              if(s1*s2 > 0.0f) {
-                s2 = rtVectorDotp(t->n, ucl) + t->d;
-                if(s1*s2 > 0.0f) {
-                  s2 = rtVectorDotp(t->n, ucr) + t->d;
-                  if(s1*s2 > 0.0f) {
-                    s2 = rtVectorDotp(t->n, ufl) + t->d;
-                    if(s1*s2 > 0.0f) {
-                      s2 = rtVectorDotp(t->n, ufr) + t->d;
-                      if(s1*s2 > 0.0f) {
-                        /* If we are here, all corners of voxel are on the same
-                         * side of triangle's plane. That means that current
-                         * triangle is not added to vertex. */
-                        continue;
+          /* Now if all found intersection points does not satisfy voxel's
+           * bounds, plane does not intersect voxel. */
+          if((x11 < x1 || x11 > x2) && (x12 < x1 || x12 > x2) && (x21 < x1 || x21 > x2) && (x22 < x1 || x22 > x2) &&
+             (y11 < y1 || y11 > y2) && (y12 < y1 || y12 > y2) && (y21 < y1 || y21 > y2) && (y22 < y1 || y22 > y2) &&
+             (z11 < z1 || z11 > z2) && (z12 < z1 || z12 > z2) && (z21 < z1 || z21 > z2) && (z22 < z1 || z22 > z2))
+          {
+            continue;
+          }
+          
+          /* At this point we know, that triangle's plane intersects current
+           * voxel. Now using points calculated in previous step check if
+           * triangle really intersects current voxel. */
+          int further_test = 0;
+          rtVectorCreate(p, x1, y11, z1);
+          if(!rtInt1TestPoint(t, p)) {
+            rtVectorCreate(p, x1, y12, z2);
+            if(!rtInt1TestPoint(t, p)) {
+              rtVectorCreate(p, x2, y21, z1);
+              if(!rtInt1TestPoint(t, p)) {
+                rtVectorCreate(p, x2, y22, z2);
+                if(!rtInt1TestPoint(t, p)) {
+                  rtVectorCreate(p, x11, y1, z1);
+                  if(!rtInt1TestPoint(t, p)) {
+                    rtVectorCreate(p, x12, y1, z2);
+                    if(!rtInt1TestPoint(t, p)) {
+                      rtVectorCreate(p, x21, y2, z1);
+                      if(!rtInt1TestPoint(t, p)) {
+                        rtVectorCreate(p, x22, y2, z2);
+                        if(!rtInt1TestPoint(t, p)) {
+                          rtVectorCreate(p, x1, y1, z11);
+                          if(!rtInt1TestPoint(t, p)) {
+                            rtVectorCreate(p, x1, y2, z12);
+                            if(!rtInt1TestPoint(t, p)) {
+                              rtVectorCreate(p, x2, y1, z21);
+                              if(!rtInt1TestPoint(t, p)) {
+                                rtVectorCreate(p, x2, y2, z22);
+                                if(!rtInt1TestPoint(t, p)) {
+                                  further_test = 1;
+                                }
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -288,7 +333,28 @@ void rtUddVoxelize(RT_Udd *self, RT_Scene *scene) {
             }
           }
           
-          //TODO: add more processing to remove as much of voxels as possible
+          /* One more test - find intersection point between triangle edges and
+           * voxel edges. */
+          if(further_test) {
+            if((t->i[0] < x1 || t->i[0] > x2 || t->i[1] < y1 || t->i[1] > y2 || t->i[2] < z1 || t->i[2] > z2) &&
+               (t->j[0] < x1 || t->j[0] > x2 || t->j[1] < y1 || t->j[1] > y2 || t->j[2] < z1 || t->j[2] > z2) &&
+               (t->k[0] < x1 || t->k[0] > x2 || t->k[1] < y1 || t->k[1] > y2 || t->k[2] < z1 || t->k[2] > z2))
+            {
+              RT_Vertex4f ij, ik, jk;
+
+              rtVectorRay(ij, t->i, t->j);
+              rtVectorRay(ik, t->i, t->k);
+              rtVectorRay(jk, t->j, t->k);
+
+              if(!rtUddCheckVoxelIntersection(self, scene, t->i, ij, i, j, k)) {
+                if(!rtUddCheckVoxelIntersection(self, scene, t->i, ik, i, j, k)) {
+                  if(!rtUddCheckVoxelIntersection(self, scene, t->j, jk, i, j, k)) {
+                    continue;
+                  }
+                }
+              }
+            }
+          }
 
           // add triangle to current voxel
           vptr = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
@@ -357,6 +423,69 @@ int rtUddFindStartupVoxel(
   return 0;
 }
 ///////////////////////////////////////////////////////////////
+int rtUddCheckVoxelIntersection(
+    RT_Udd *self, RT_Scene *scene,
+    float *o, float *r,
+    int32_t i_, int32_t j_, int32_t k_)
+{
+  RT_Vertex4f tmpv;
+  float dmin1=FLT_MAX, dmin2=FLT_MAX;
+  float dmin[3], dmax[3];
+  float d;
+  int a;
+  int32_t i, j, k, ijk[3]={i_, j_, k_};
+
+  /* Calculate voxel bounds. */
+  for(a=0; a<3; a++) {
+    dmin[a] = scene->dmin[a] + ijk[a]*self->s[a];
+    dmax[a] = dmin[a] + self->s[a];
+  }
+
+  /* Calculate distance from ray origin to all walls by solving simplified
+   * ray->plane equation. Get two minimal distances (because only two are
+   * needed to test whether ray enters domain). */
+  for(a=0; a<3; a++) {
+    if(r[a] != 0.0f) {
+      d = (dmin[a] - o[a]) / r[a];
+      if(d > 0.0f) {
+        if(d < dmin1) {
+          dmin2 = dmin1;
+          dmin1 = d;
+        } else if(d < dmin2) {
+          dmin2 = d;
+        }
+      }
+      d = (dmax[a] - o[a]) / r[a];
+      if(d > 0.0f) {
+        if(d < dmin1) {
+          dmin2 = dmin1;
+          dmin1 = d;
+        } else if(d < dmin2) {
+          dmin2 = d;
+        }
+      }
+    }
+  }
+  
+  /* Calculate intersection point at first minimal distance and check whether
+   * it belongs to domain. */
+  rtVectorRaypoint(tmpv, o, r, dmin1);
+  if(rtVertexGetVoxel(scene, self, tmpv, &i, &j, &k)) {
+    if(i==i_ && j==j_ && k==k_)
+      return 1;
+  }
+
+  /* Calculate intersection point at second minimal distance - if this check
+   * fails, ray is not entering domain. */
+  rtVectorRaypoint(tmpv, o, r, dmin2);
+  if(rtVertexGetVoxel(scene, self, tmpv, &i, &j, &k)) {
+    if(i==i_ && j==j_ && k==k_)
+      return 1;
+  }
+
+  return 0;
+}
+///////////////////////////////////////////////////////////////
 RT_Triangle* rtUddFindNearestTriangle(
   RT_Udd *self, RT_Scene *scene, 
   RT_Triangle *current,
@@ -370,6 +499,8 @@ RT_Triangle* rtUddFindNearestTriangle(
   float d;
   int32_t di, dj, dk;
   int32_t i=*i_, j=*j_, k=*k_;
+  int32_t c, nidx=0;
+  RT_Triangle *t, *nearest, *tmp;
   
   /* Initialize traversal algorithm. */
   rtUddTraverseInitialize(
@@ -386,19 +517,22 @@ RT_Triangle* rtUddFindNearestTriangle(
     // check intersections in current voxel
     RT_Voxel *voxel = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
     if(voxel->nt > 0) {
-      *dmin=MIN(tx+dtx, ty+dty, tz+dtz);
-      RT_Triangle **t=voxel->t, **maxt=(RT_Triangle**)(voxel->t + voxel->nt);
-      RT_Triangle *nearest=NULL;
-      while(t < maxt) {
-        if((*t)->isint(*t, o, r, &d, dmin)) {
-          if(*t != current && d < *dmin) {
+      *dmin = MIN(tx+dtx, ty+dty, tz+dtz);
+      nearest = NULL;
+      for(c=0; c<voxel->nt; c++) {
+        t = voxel->t[c]; 
+        if(t->isint(t, o, r, &d, dmin)) {
+          if(t != current && d < *dmin) {
             *dmin = d;
-            nearest = *t;
+            nearest = t;
+            nidx = c;
           }
         }
-        t++;
       }
       if(nearest) {
+        //tmp = voxel->t[0];
+        //voxel->t[0] = nearest;
+        //voxel->t[nidx] = tmp;
         rtVectorRaypoint(ipoint, o, r, *dmin); //FIXME: move calculation of intersection point to intersection test function
         *i_=i; *j_=j; *k_=k;
         return nearest;
@@ -430,17 +564,42 @@ RT_Triangle* rtUddFindNearestTriangle(
 RT_Triangle* rtUddFindShadow(
   RT_Udd *self, RT_Scene *scene,
   RT_Triangle *current,
-  float *a, float *b) 
+  float *a, RT_Light *l, int32_t lindex, float *ts)
 {
   int32_t aidx[3], bidx[3];
   int32_t min[3], max[3];
   float tx, dtx, ty, dty, tz, dtz;
   float tx_n, ty_n, tz_n;
+  float *b = l->p;
   int32_t di, dj, dk;
   int32_t i, j, k;
+  int32_t c;
   float d, dmin=FLT_MAX, dmax;
-  int c;
   RT_Vertex4f r;
+  RT_Triangle *t;
+  
+  // initialize ts
+  *ts = 1.0f;
+
+  // calculate normalized ray vector from vertex `a` to vertex `b`
+  rtVectorRay(r, a, b);
+  
+  // check if light is beyond current surface (100% sure that light is not
+  // visible from such surface if so)
+  if(current->s->kt == 0.0f) {
+    if(rtVectorDotp(r, current->n) <= 0.0f) {
+      return current;
+    }
+  }
+
+  // check if ray intersects cached object
+  RT_Triangle *cache = current->shadow_cache[lindex];
+  if(cache != NULL) {
+    if(cache->isint(cache, a, r, &d, &dmin)) {
+      return cache;
+    }
+    current->shadow_cache[lindex] = NULL;
+  }
 
   // calculate distance between points
   dmax = rtVectorDistance(a, b);
@@ -456,9 +615,6 @@ RT_Triangle* rtUddFindShadow(
     RT_ERROR("rtUddFindShadow(): vertex `b` outside of domain: x=%.3f, y=%.3f, z=%.3f", b[0], b[1], b[2])
     return NULL;
   }
-
-  // calculate normalized ray vector from vertex `a` to vertex `b`
-  rtVectorRay(r, a, b);
 
   // calculate minimal and maximal voxel
   for(c=0; c<3; c++) {
@@ -487,14 +643,20 @@ RT_Triangle* rtUddFindShadow(
     // check intersections in current voxel
     RT_Voxel *voxel = (RT_Voxel*)(self->v + rtVoxelArrayOffset(self, i, j, k));
     if(voxel->nt > 0) {
-      RT_Triangle **t=voxel->t, **maxt=(RT_Triangle**)(voxel->t + voxel->nt);
-      while(t < maxt) {
-        if((*t)->isint(*t, a, r, &d, &dmin)) {
-          if(*t != current && d < dmax) {
-            return *t;
+      for(c=0; c<voxel->nt; c++) {
+        t = voxel->t[c];
+        if(t->isint(t, a, r, &d, &dmin)) {
+          if(t != current) {
+            if(t->s->kt > 0.0f) {  // found transparent or semi-transparent triangle
+              *ts *= t->s->kt;
+              continue;
+            }
+            if(d > 0.00001f && d < dmax) {
+              current->shadow_cache[lindex] = t;
+              return t;
+            }
           }
         }
-        t++;
       }
     }
 
