@@ -112,7 +112,7 @@ def normalize_atr(source, dest):
     src = open(source, 'r')
     dst = open(dest, 'w')
     try:
-        used_params = ('kd', 'ks', 'gs', 'ka', 'color', 'kts', 'eta', 'ktd')
+        used_params = ('kd', 'ks', 'gs', 'ka', 'color', 'ktd', 'eta', 'kts')
 
         data = {}
         for p in used_params:
@@ -153,13 +153,18 @@ def normalize_cam(source, dest):
     src = open(source, 'r')
     dst = open(dest, 'w')
     try:
+        lines = []
         for line in filelines(src):
             if line.startswith('Camera') or line.startswith('enddef'):
                 continue
             line = re.sub('[A-Za-z]+', '', line).strip()
             if not line:
                 continue
-            dst.write("%s\n" % line)
+            lines.append(line)
+        tmp = lines[2]
+        lines[2] = lines[3]
+        lines[3] = tmp
+        dst.write("%s" % ('\n'.join(lines)))
     finally:
         src.close()
         dst.close()
@@ -251,7 +256,7 @@ def main():
         log.info("processing file: %s", path)
 
         if path.endswith('brs'):
-            pass #normalize_brs(path, abs_dest_file)
+            normalize_brs(path, abs_dest_file)
         elif path.endswith('cam'):
             normalize_cam(path, abs_dest_file)
         elif path.endswith('atr'):
@@ -260,36 +265,6 @@ def main():
             normalize_lgt(path, abs_dest_file)
         else:
             log.warning("...skipping - unexpected file type")
-
-    """data = []
-    stack = []
-    for line in source_lines(opts.source):
-        if line.startswith(';;'):
-            continue  # comment
-        if 'enddef' in line.lower():
-            data.append(stack.pop())
-            continue
-        tmp = re.split('\s+', line)
-        if tmp[0].lower() == 'attr':
-            val = int(re.sub('0+', '', tmp[1])[1:]) - 1
-            stack.append({'surface_id': val})
-        else:
-            s = tmp[1:]
-            stack[-1][tmp[0]] = s if len(s) > 1 else s[0]
-    
-    data.sort(key=lambda x: x['surface_id'])
-
-    fd = open(opts.dest or '/tmp/attribute.atr', 'w')
-    try:
-        fd.write("%s\n" % len(data))
-        for d in data:
-            color = []
-            for i in xrange(len(d['color'])):
-                color.append(int(d['color'][i])/255.0)
-            fd.write("%s %s %s %s %s %s %s\n" % (d['kd'], d['ks'], d['gs'], d['ka'], color[0], color[1], color[2]))
-            fd.write("%s %s %s\n" % (d['kts'], d['eta'], '0.0000'))
-    finally:
-        fd.close()"""
 
     return 0
 
