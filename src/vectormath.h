@@ -3,6 +3,14 @@
 
 #include <math.h>
 
+/* Builds vector from coords. */
+static inline float* rtVectorCreate(float *out, float x, float y, float z) {
+  out[0] = x;
+  out[1] = y;
+  out[2] = z;
+  return out;
+}
+
 /* Copies source vector to dest vector and returns dest vector. */
 static inline float* rtVectorCopy(float *src, float *dest) {
   dest[0] = src[0];  //x
