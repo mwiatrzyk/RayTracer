@@ -39,6 +39,7 @@ typedef struct _RT_Triangle {
   RT_Vertex4f n;                // normal vector
   RT_Vertex4f ij, ik;           // vectors: i to j, i to k
   float d;                      // d parameter of plane equation: nx*x + ny*y + nz*z + d = 0
+  struct _RT_Triangle **shadow_cache;  // array of previous found triangles at shadow test step (length matches number of lights)
   union {
     RT_Int1Coeffs i1;
   } ic;
@@ -56,11 +57,16 @@ typedef struct _RT_Light {
 /* Definition of scene. This is a container that keeps entire scene data in one
  * place. */
 typedef struct _RT_Scene {
+  int simplified_shadows;
+  float gamma, epsilon, distmod;
   float dmin[3];  // minimal values of x, y and z of all scene's triangles
   float dmax[3];  // like above, but maximal
   int32_t nt;     // number of triangles in scene
   int32_t nl;     // number of lights
   int32_t ns;     // number of surfaces
+  float *lbuf;    // luminance buffer
+  float *tc;
+  float *lc;
   RT_Triangle *t; // array of triangles
   RT_Light *l;    // array of lights
   RT_Surface *s;  // array of surfaces
@@ -73,20 +79,6 @@ typedef struct _RT_Camera {
   RT_Vertex4f ul, bl, ur;   // screen coords: ul - upper left, bl - bottom left, ur - upper right
   int32_t sw, sh;           // screen resolution: sw - width, sh - height
 } RT_Camera;
-
-
-//// INLINE FUNCTIONS /////////////////////////////////////////
-
-/* Sets lights array in given scene. 
-
-:param: self: pointer to scene object
-:param: l: array of lights
-:param: nl: number of items in array of lights */
-static inline RT_Scene* rtSceneSetLights(RT_Scene* self, RT_Light* l, uint32_t nl) {
-  self->nl = nl;
-  self->l = l;
-  return self;
-}
 
 
 //// FUNCTIONS ////////////////////////////////////////////////
@@ -103,6 +95,13 @@ RT_Scene* rtSceneLoad(const char *filename);
 :param: s: array of surfaces
 :param: ns: number of items in array of surfaces */
 RT_Scene* rtSceneSetSurfaces(RT_Scene* self, RT_Surface* s, uint32_t ns);
+
+/* Sets lights array in given scene. 
+
+:param: self: pointer to scene object
+:param: l: array of lights
+:param: nl: number of items in array of lights */
+RT_Scene* rtSceneSetLights(RT_Scene* self, RT_Light* l, uint32_t nl);
 
 /* Releases memory occupied by given RT_Scene object.
 

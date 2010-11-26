@@ -1,6 +1,7 @@
 #include "scene.h"
 #include "error.h"
 #include "vectormath.h"
+#include "common.h"
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -87,11 +88,11 @@ RT_Scene* rtSceneLoad(const char *filename) {
       // update minimal and maximal domain size
       for(k=0; k<3; k++) {
         //FIXME: result is filled with salt & pepper without if..else below
-        if(v[i][k] > 0.0f) {    
-          v[i][k] += 0.00001f;
+        /*if(v[i][k] > 0.0f) {    
+          v[i][k] += 0.0001f;
         } else {
-          v[i][k] -= 0.00001f;
-        }
+          v[i][k] -= 0.0001f;
+        }*/
         if(v[i][k] < res->dmin[k]) res->dmin[k]=v[i][k];
         if(v[i][k] > res->dmax[k]) res->dmax[k]=v[i][k];
       }
@@ -112,7 +113,7 @@ RT_Scene* rtSceneLoad(const char *filename) {
         errno = E_MEMORY;
         goto cleanup;
       }
-      
+
       // initialize variables
       i = 0;
 
@@ -125,6 +126,53 @@ RT_Scene* rtSceneLoad(const char *filename) {
       rtVectorCopy(v[_i], res->t[i].i);
       rtVectorCopy(v[j], res->t[i].j);
       rtVectorCopy(v[k], res->t[i].k);
+      
+      RT_Vertex4f tmp;
+      RT_Triangle *t = &res->t[i];
+      const float delta = -0.0000001f;
+
+      // calculate centroid vertex as average of all vertices (used to enlarge
+      // triangle)
+      RT_Vertex4f cent;
+      for(k=0; k<3; k++) {
+        cent[k] = (t->i[k] + t->j[k] + t->k[k]) / 3.0f;
+      }
+      
+      // modify vertex `i` according to direction of cent->i vector
+      rtVectorRay(tmp, cent, t->i);
+      for(k=0; k<3; k++) {
+        if(tmp[k] < 0.0f) {
+          t->i[k] += -delta;
+        } else if(tmp[k] > 0.0f) {
+          t->i[k] += delta;
+        }
+        if(t->i[k] < res->dmin[k]) res->dmin[k]=t->i[k];
+        if(t->i[k] > res->dmax[k]) res->dmax[k]=t->i[k];
+      }
+
+      // modify vertex `j` according to direction of cent->j vector
+      rtVectorRay(tmp, cent, t->j);
+      for(k=0; k<3; k++) {
+        if(tmp[k] < 0.0f) {
+          t->j[k] += -delta;
+        } else if(tmp[k] > 0.0f) {
+          t->j[k] += delta;
+        }
+        if(t->j[k] < res->dmin[k]) res->dmin[k]=t->j[k];
+        if(t->j[k] > res->dmax[k]) res->dmax[k]=t->j[k];
+      }
+
+      // modify vertex `k` according to direction of cent->k vector
+      rtVectorRay(tmp, cent, t->k);
+      for(k=0; k<3; k++) {
+        if(tmp[k] < 0.0f) {
+          t->k[k] += -delta;
+        } else if(tmp[k] > 0.0f) {
+          t->k[k] += delta;
+        }
+        if(t->k[k] < res->dmin[k]) res->dmin[k]=t->k[k];
+        if(t->k[k] > res->dmax[k]) res->dmax[k]=t->k[k];
+      }
 
       i++; tcount--;
 
@@ -189,12 +237,66 @@ RT_Scene* rtSceneSetSurfaces(RT_Scene* self, RT_Surface* s, uint32_t ns) {
 
 
 ///////////////////////////////////////////////////////////////
+RT_Scene* rtSceneSetLights(RT_Scene* self, RT_Light* l, uint32_t nl) {
+  int32_t k;
+  self->nl = nl;
+  self->l = l;
+  
+  self->lbuf = malloc(nl*sizeof(float));
+  if(!self->lbuf) {
+    errno = E_MEMORY;
+    return NULL;
+  }
+  
+  self->tc = malloc(nl*sizeof(float));
+  if(!self->tc) {
+    errno = E_MEMORY;
+    return NULL;
+  }
+  for(k=0; k<nl; k++) {
+    self->tc[k] = 1.0f;
+  }
+  
+  self->lc = malloc(nl*sizeof(float));
+  if(!self->lc) {
+    errno = E_MEMORY;
+    return NULL;
+  }
+  for(k=0; k<nl; k++) {
+    self->lc[k] = 1.0f;
+  }
+
+  memset(self->lbuf, 0, nl*sizeof(float));
+  
+  for(k=0; k<self->nt; k++) {
+    self->t[k].shadow_cache = malloc(nl*sizeof(RT_Triangle*));
+    if(!self->t[k].shadow_cache) {
+      errno = E_MEMORY;
+      return NULL;
+    }
+    memset(self->t[k].shadow_cache, 0, nl*sizeof(RT_Triangle*));
+  }
+  return self;
+}
+
+///////////////////////////////////////////////////////////////
 void rtSceneDestroy(RT_Scene **self) {
+  int32_t k;
   RT_Scene *ptr=*self;
   if(!ptr)
     return;
-  if(ptr->t)
+  if(ptr->t) {
+    for(k=0; k<ptr->nt; k++) {
+      free(ptr->t[k].shadow_cache);
+    }
     free(ptr->t);
+  }
+  if(ptr->tc)
+    free(ptr->tc);
+  if(ptr->lc)
+    free(ptr->lc);
+  if(ptr->lbuf)
+    free(ptr->lbuf);
   if(ptr->l)
     free(ptr->l);
   if(ptr->s)
@@ -232,6 +334,7 @@ RT_Light* rtLightLoad(const char *filename, uint32_t *n) {
         res = NULL;
         goto cleanup;
       }
+      memset(res, 0, lcount*sizeof(RT_Light));
       
       // initialize variables
       i = 0;
@@ -311,13 +414,13 @@ RT_Surface* rtSurfaceLoad(const char *filename, uint32_t *n) {
             res[i].ka = tmp;
             break;
           case 4:
-            res[i].color.c[0] = tmp;
+            res[i].color.c[0] = tmp<=1.0f? tmp: tmp/255.0f;
             break;
           case 5:
-            res[i].color.c[1] = tmp;
+            res[i].color.c[1] = tmp<=1.0f? tmp: tmp/255.0f;
             break;
           case 6:
-            res[i].color.c[2] = tmp;
+            res[i].color.c[2] = tmp<=1.0f? tmp: tmp/255.0f;
             break;
           case 7: 
             res[i].kt = tmp;
