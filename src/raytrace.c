@@ -89,7 +89,7 @@ static RT_Color rtRayTrace(
   float a_sum=0.0f, r_sum=0.0f;
 
   /* Perform simplified shadow test. */
-  if(scene->simplified_shadows) {  //TODO get switch from file
+  if(scene->cfg.epsilon) {  //TODO get switch from file
     // calculate intensities
     for(c=0; c<scene->nl; c++) {
       l = &scene->l[c];
@@ -113,7 +113,7 @@ static RT_Color rtRayTrace(
       }
 
       // calculate luminance and add to buffer
-      scene->lbuf[c] = l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->distmod);
+      scene->lbuf[c] = l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->cfg.distmod);
     }
 
     // sort luminance buffer in descending order
@@ -134,7 +134,7 @@ static RT_Color rtRayTrace(
     for(c=0; c<scene->nl; c++) {
       l = &scene->l[c];
 
-      if(r_sum/a_sum < scene->epsilon)  //TODO: get param from file
+      if(r_sum/a_sum < scene->cfg.epsilon)  //TODO: get param from file
         break;
 
       if(!rtUddFindShadow(udd, scene, nearest, onew, l, c, &ts)) {
@@ -185,7 +185,7 @@ static RT_Color rtRayTrace(
 
         // calculate color
         rtVectorAdd(tmp.c, l->color.c, nearest->s->color.c);
-        rtVectorMul(tmp.c, tmp.c, ts*l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->distmod));
+        rtVectorMul(tmp.c, tmp.c, ts*l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->cfg.distmod));
         rtVectorAdd(res.c, res.c, tmp.c);
       }
     }
@@ -224,8 +224,8 @@ RT_VisualizedScene* rtVisualizedSceneRaytrace(RT_Scene *scene, RT_Camera *camera
     errno = E_MEMORY;
     return NULL;
   }
-  if(scene->gamma > 0.0f) {
-    res->gamma = scene->gamma;
+  if(scene->cfg.gamma > 0.0f) {
+    res->gamma = scene->cfg.gamma;
   } else {
     res->gamma = 2.5f;
   }
@@ -253,7 +253,6 @@ RT_VisualizedScene* rtVisualizedSceneRaytrace(RT_Scene *scene, RT_Camera *camera
   RT_Udd *udd = rtUddCreate(scene);
   if(!udd) {
     rtVisualizedSceneDestroy(&res);
-    errno = E_MEMORY;
     return NULL;
   }
   
