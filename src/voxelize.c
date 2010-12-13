@@ -145,13 +145,60 @@ RT_Udd* rtUddCreate(RT_Scene* scene) {
   RT_INFO("domain size min: x=%.3f, y=%.3f, z=%.3f", scene->dmin[0], scene->dmin[1], scene->dmin[2]);
   RT_INFO("domain size max: x=%.3f, y=%.3f, z=%.3f", scene->dmax[0], scene->dmax[1], scene->dmax[2]);
   
-  // calculate grid size and size of single element of grid
-  v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f)*2.0f + 0.001f;
-  for(k=0; k<3; k++) {
-    tmp = ceil(ds[k]*v);  // number of grid elements in k-direction
-    res->nv[k] = tmp;
-    res->s[k] = ds[k]/tmp;  // size of voxel in k-direction
+  // calculate number of voxels depending on current voxelization mode
+  switch(scene->cfg.vmode) {
+    /* Default voxelization mode. Number of voxels in this mode is as close to
+     * number of triangles as possible. */
+    case VOX_DEFAULT:
+      v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f);
+      for(k=0; k<3; k++) {
+        tmp = ceil(ds[k]*v);  // number of grid elements in k-direction
+        res->nv[k] = tmp;
+        res->s[k] = ds[k]/tmp;  // size of voxel in k-direction
+      }
+      break;
+
+    /* In this mode number of voxels is calculated like in method above, but
+     * can also be modified by i,j,k coeffs. If coeff is less than 1, number
+     * of voxels will be less than default in direction specified by coeff. If
+     * coeff is greater than 1, number of voxels will be greater than default
+     * in direction specified by coeff. If all coeffs are set to 1 this mode
+     * will give same results as previous one. */
+    case VOX_MODIFIED_DEFAULT:
+      for(k=0; k<3; k++) {
+        if(scene->cfg.vcoeff[k] <= 0.0f) {
+          RT_EERROR("none of voxelization coeffs can be <= 0 in VOX_MODIFIED_DEFAULT voxelization mode")
+          free(res);
+          errno = E_INVALID_PARAM_VALUE;
+          return NULL;
+        }
+      }
+      v = pow(scene->nt/(ds[0]*ds[1]*ds[2]), 0.33333f);
+      for(k=0; k<3; k++) {
+        tmp = ceil(ds[k]*v*scene->cfg.vcoeff[k]);  // number of grid elements in k-direction
+        res->nv[k] = tmp;
+        res->s[k] = ds[k]/tmp;  // size of voxel in k-direction
+      }
+      break;
+    /* In this mode voxelization coeffs are simply used as number of voxels in
+     * i,j,k directions, correspondingly. */
+    case VOX_FIXED:
+      for(k=0; k<3; k++) {
+        if(scene->cfg.vcoeff[k] <= 0.0f) {
+          RT_EERROR("none of voxelization coeffs can be <= 0 in VOX_MODIFIED_DEFAULT voxelization mode")
+          free(res);
+          errno = E_INVALID_PARAM_VALUE;
+          return NULL;
+        }
+      }
+      for(k=0; k<3; k++) {
+        tmp = ceil(scene->cfg.vcoeff[k]);  // number of grid elements in k-direction
+        res->nv[k] = tmp;
+        res->s[k] = ds[k]/tmp;  // size of voxel in k-direction
+      }
+      break;
   }
+
   RT_INFO("number of voxels: i=%d, j=%d, k=%d", res->nv[0], res->nv[1], res->nv[2]);
   RT_INFO("total number of voxels: %d", res->nv[0]*res->nv[1]*res->nv[2]);
   RT_INFO("total number of triangles: %d", scene->nt);
