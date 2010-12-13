@@ -33,7 +33,12 @@ typedef enum _RT_ErrorCode {
   /*------------------------
     used by: `scene` module 
    -------------------------*/
-  E_NOT_ENOUGH_SURFACES   //not enough surfaces to cover entire scene
+  E_NOT_ENOUGH_SURFACES,   //not enough surfaces to cover entire scene
+
+  /*---------------------------
+    used by: `voxelize` module
+   ----------------------------*/
+  E_INVALID_PARAM_VALUE   // parameter has invalid value
 } RT_ErrorCode;
 
 //// FUNCTIONS ////////////////////////////////////////////////

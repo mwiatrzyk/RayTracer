@@ -22,6 +22,11 @@ static struct RT_ErrorDescription errdesc[] = {
    -------------------------*/
   {E_NOT_ENOUGH_SURFACES, "scene requires more surfaces to be defined"},
 
+  /*---------------------------
+    used by: `voxelize` module
+   ----------------------------*/
+  {E_INVALID_PARAM_VALUE, "parameter has invalid value"},
+
   /*-------
     others
    --------*/
