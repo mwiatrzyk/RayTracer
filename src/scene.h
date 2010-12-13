@@ -9,6 +9,12 @@
 
 typedef float RT_Vertex4f[4];
 
+typedef enum _RT_VoxelizationMode {
+  VOX_DEFAULT,           // calculating number of voxels in default way
+  VOX_MODIFIED_DEFAULT,  // calculating number of voxels in default way, but number of voxels can be modified by 3 constants
+  VOX_FIXED              // fixed number of voxels in each direction (3 constants)
+} RT_VoxelizationMode;
+
 
 //// INTERSECTION TEST COEFFS STRUCTURES //////////////////////
 
@@ -54,11 +60,22 @@ typedef struct _RT_Light {
 } RT_Light;
 
 
+/* Rendering process configuration. */
+typedef struct _RT_SceneConfig {
+  float epsilon;  // epislon parameter for simplified shadow calculation (0 for normal processing)
+  float gamma;  // gamma correction parameter of resulting image
+  float distmod;   // distance modifier used in light calculation
+  RT_VoxelizationMode vmode;   // voxelization mode
+  float vcoeff[3];   // voxelization coefficients (meaning depend on mode)
+} RT_SceneConfig;
+
+
 /* Definition of scene. This is a container that keeps entire scene data in one
  * place. */
 typedef struct _RT_Scene {
-  int simplified_shadows;
-  float gamma, epsilon, distmod;
+  /* Rendering process configuration. */
+  RT_SceneConfig cfg;
+  /* Scene description variables. */
   float dmin[3];  // minimal values of x, y and z of all scene's triangles
   float dmax[3];  // like above, but maximal
   int32_t nt;     // number of triangles in scene
@@ -87,6 +104,12 @@ typedef struct _RT_Camera {
 
 :param: filename: path to geometry file */
 RT_Scene* rtSceneLoad(const char *filename);
+
+/* Loads scene rendering configuration for given scene from given file. 
+
+:param: self: pointer to RT_Scene object
+:param: filename: path to config file for scene */
+RT_Scene* rtSceneConfigureRenderer(RT_Scene* self, const char *filename);
 
 /* Sets surfaces array in given scene and applies surface pointers to all
  * triangles within that scene. 

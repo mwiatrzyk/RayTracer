@@ -209,8 +209,64 @@ RT_Scene* rtSceneLoad(const char *filename) {
 cleanup:
   if(v) free(v);
   if(fd) fclose(fd);
+  
+  // set default config values
+  res->cfg.epsilon = 0.0f;
+  res->cfg.gamma = 2.5f;
+  res->cfg.distmod = 2.0f;
+  res->cfg.vmode = VOX_DEFAULT;
 
   return res;
+}
+
+
+///////////////////////////////////////////////////////////////
+RT_Scene* rtSceneConfigureRenderer(RT_Scene* self, const char *filename) {
+  char *line, *pch;
+  char buf[1024];
+
+  FILE *fd = fopen(filename, "r");
+  if (!fd) {
+    errno = E_IO;
+    return NULL;
+  }
+
+  while((line=rtReadline(fd)) != NULL) {
+    pch = strtok(line, " \t");
+    while(pch != NULL) {
+      if(!strcmp(pch, "epsilon")) {
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%f", &self->cfg.epsilon);
+      } else if(!strcmp(pch, "gamma")) {
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%f", &self->cfg.gamma);
+      } else if(!strcmp(pch, "distmod")) {
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%f", &self->cfg.distmod);
+      } else if(!strcmp(pch, "voxmode")) {
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%s", buf);
+        if(!strcmp(buf, "DEFAULT")) {
+          self->cfg.vmode = VOX_DEFAULT;
+        } else if(!strcmp(buf, "MODIFIED_DEFAULT")) {
+          self->cfg.vmode = VOX_MODIFIED_DEFAULT;
+        } else if(!strcmp(buf, "FIXED")) {
+          self->cfg.vmode = VOX_FIXED;
+        } else {
+          RT_WARN("%s: no such voxelization mode - using VOX_DEFAULT", pch)
+          self->cfg.vmode = VOX_DEFAULT;
+        }
+      } else if(!strcmp(pch, "voxparams")) {
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%f", &self->cfg.vcoeff[0]);
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%f", &self->cfg.vcoeff[1]);
+        pch = strtok(NULL, " \t");
+        sscanf(pch, "%f", &self->cfg.vcoeff[2]);
+      }
+      pch = strtok(NULL, " \t");
+    }
+  }
 }
 
 
