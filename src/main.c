@@ -32,7 +32,11 @@ void print_help(const char *executable) {
 
 
 /* Parse command line arguments. */
-int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, char **s, char **o, float *gamma, float *epsilon, float *distmod) {
+int parse_args(
+    int argc, char* argv[], 
+    char **g, char **l, char **a, char **c,
+    char **s, char **o, float *gamma, float *epsilon, float *distmod, char **C) {
+
   int i=1, alen;
   char *tmp, **dst=NULL;
   if(argc <= 1) {
@@ -50,6 +54,8 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
         dst = a;
       } else if(rtStringStartsWith(tmp, "-c")) {
         dst = c;
+      } else if(rtStringStartsWith(tmp, "-C")) {
+        dst = C;
       } else if(rtStringStartsWith(tmp, "-s")) {
         dst = s;
       } else if(rtStringStartsWith(tmp, "-o")) {
@@ -97,12 +103,12 @@ int parse_args(int argc, char* argv[], char **g, char **l, char **a, char **c, c
 
 /* Bootstrap function */
 int main(int argc, char* argv[]) {
-  char *g=NULL, *l=NULL, *a=NULL, *c=NULL, *s=NULL, *o=NULL;
+  char *g=NULL, *l=NULL, *a=NULL, *c=NULL, *s=NULL, *o=NULL, *C=NULL;
   float gamma=2.5f, epsilon=0.0f, distmod=2.0f;
   uint32_t n;
 
   // parse command line arguments
-  if(!parse_args(argc, argv, &g, &l, &a, &c, &s, &o, &gamma, &epsilon, &distmod)) {
+  if(!parse_args(argc, argv, &g, &l, &a, &c, &s, &o, &gamma, &epsilon, &distmod, &C)) {
     goto garbage_collect;
   }
   if(errno>0) {
@@ -115,18 +121,26 @@ int main(int argc, char* argv[]) {
   if(!l) l = rtStringConcat(s, ".lgt");
   if(!a) a = rtStringConcat(s, ".atr");
   if(!c) c = rtStringConcat(s, ".cam");
+  if(!C) C = rtStringConcat(s, ".cfg");
 
   // load scene geometry
   RT_INFO("loading scene geometry: %s", g);
   RT_Scene *scene = rtSceneLoad(g);
   if(errno>0) {
-    RT_ERROR("unable to load scene geometry: %s", rtGetErrorDesc());
+    RT_ERROR("unable to load scene geometry: %s", rtGetErrorDesc())
     goto garbage_collect;
   }
-  scene->simplified_shadows = epsilon > 0.0f? 1: 0;
-  scene->epsilon = epsilon;
-  scene->gamma = gamma;
-  scene->distmod = distmod;
+  scene->cfg.epsilon = epsilon;
+  scene->cfg.gamma = gamma;
+  scene->cfg.distmod = distmod;
+  if(C) {
+    RT_INFO("loading renderer configuration file: %s", C)
+    rtSceneConfigureRenderer(scene, C);
+    if(errno > 0) {
+      RT_WARN("unable to load renderer configuration file: %s", rtGetErrorDesc())
+      errno = 0;
+    }
+  }
 
   // load lights and add to scene
   RT_INFO("loading lights: %s", l);
@@ -161,6 +175,9 @@ int main(int argc, char* argv[]) {
   if(errno>0) {
     RT_WARN("errno set by ray-trace process: %d, %s", errno, rtGetErrorDesc());
     errno = 0;
+  }
+  if(!vs) {
+    goto garbage_collect;
   }
   RT_INFO("...ray-tracing done. Time taken: %.3f seconds", (double)(clock()-start)/CLOCKS_PER_SEC);
 
