@@ -80,56 +80,51 @@ static RT_Color rtVisualizedSceneGetBluredPixel(RT_VisualizedScene* s, int x, in
 static rtApplyTexture(RT_Triangle* nearest, RT_Vertex4f norm, RT_Color* out, float *o, float u, float v) {
   float px = nearest->ti[0] + (nearest->tj[0]-nearest->ti[0])*u + (nearest->tk[0]-nearest->ti[0])*v;
   float py = nearest->ti[1] + (nearest->tj[1]-nearest->ti[1])*u + (nearest->tk[1]-nearest->ti[1])*v;
-  //printf("%f %f\n", px*u, py*v);
   
-  float bheight = 0.04f, bwidth = 0.10f, filling = 0.005f, radius = 0.005f;    
-
+  float bheight=0.04f, bwidth=0.10f, filling=0.005f, radius=0.005f;
+  float delta=0.002f; 
   float vectormod[2];
-  vectormod[0] = 0;
-  vectormod[1] = 0;
+  float rfactor=2160.0f, gfactor=0.0f, bfactor=0.0f;
+  int blur=0;
   
-  RT_Color c = bricks(px, py, bheight, bwidth, filling, 20, 0, 0, 33, vectormod, radius);
-    
-  out->c[0] = c.c[0];
-  out->c[1] = c.c[1];
-  out->c[2] = c.c[2];             
-  
-  //RT_INFO("%f %f", vectormod[0], vectormod[1]);
-  
-  /*norm[0] = norm[0] + vectormod[0];
-  norm[1] = norm[1] + vectormod[1];
-  rtVectorNorm(norm);*/
-  
-
-  // get color from texture
-/*  unsigned long c = rtBitmapGetPixel(
-    nearest->texture, 
-    px*(nearest->texture->width-1), 
-    py*(nearest->texture->height-1));*/
-/*  out->c[0] = rtColorGetR(c) / 255.0f;
-  out->c[1] = rtColorGetG(c) / 255.0f;
-  out->c[2] = rtColorGetB(c) / 255.0f;*/
-  
-
-/*  float factor = (out->c[0] + out->c[1] + out->c[2]) * 0.3333f;
-  norm[0] -= factor;
-  norm[1] -= factor;
-  norm[2] -= factor;
-  rtVectorNorm(norm);*/
-  /*static int row = 0;
-  double dabs(double x) {
-    return x<0.0f? -x: x;
+  RT_Color cx1, cx2, cy1, cy2;
+  RT_Color avg = bricks(px, py, bheight, bwidth, filling, rfactor, gfactor, bfactor, 33, vectormod, radius);
+  if(delta > 0.0f) {
+    float tmp;
+    if((tmp=px-delta) >= 0.0f) {
+      cx1 = bricks(tmp, py, bheight, bwidth, filling, rfactor, gfactor, bfactor, 33, vectormod, radius);
+    }
+    if((tmp=px+delta) <= 1.0f) {
+      cx2 = bricks(tmp, py, bheight, bwidth, filling, rfactor, gfactor, bfactor, 33, vectormod, radius);
+    }
+    if((tmp=py-delta) >= 0.0f) {
+      cy1 = bricks(px, tmp, bheight, bwidth, filling, rfactor, gfactor, bfactor, 33, vectormod, radius);
+    }
+    if((tmp=py+delta) <= 1.0f) {
+      cy2 = bricks(px, tmp, bheight, bwidth, filling, rfactor, gfactor, bfactor, 33, vectormod, radius);
+    }
+    if(blur) {
+      rtVectorAdd(avg.c, avg.c, cx1.c);
+      rtVectorAdd(avg.c, avg.c, cx2.c);
+      rtVectorAdd(avg.c, avg.c, cy1.c);
+      rtVectorAdd(avg.c, avg.c, cy2.c);
+      rtVectorMul(avg.c, avg.c, 0.25f);
+    }
   }
-  if(dabs(sin(u/v)) < 0.1f) {
-    out->c[0] = 1.0f;
-    out->c[1] = 0.0f;
-    out->c[2] = 0.0f;
-    row = !row;
-  } else {
-    out->c[0] = 0.8f;
-    out->c[1] = 0.8f;
-    out->c[2] = 0.8f;
-  }*/
+    
+  out->c[0] = avg.c[0];
+  out->c[1] = avg.c[1];
+  out->c[2] = avg.c[2];
+  
+  float ugrad = (cx2.c[0]+cx2.c[1]+cx2.c[2])*0.333f - (cx1.c[0]+cx1.c[1]+cx1.c[2])*0.333f;
+  float vgrad = (cy2.c[0]+cy2.c[1]+cy2.c[2])*0.333f - (cy1.c[0]+cy1.c[1]+cy1.c[2])*0.333f;
+  RT_Vertex4f U, V;
+
+  rtVectorMul(U, nearest->ij, ugrad);
+  rtVectorMul(V, nearest->ik, -vgrad);
+  rtVectorAdd(norm, norm, U);
+  rtVectorAdd(norm, norm, V);
+  rtVectorNorm(norm);
 }
 
 
@@ -155,7 +150,7 @@ static RT_Color rtRayTrace(
     int32_t i, int32_t j, int32_t k,
     RT_Triangle **visible) 
 {
-  RT_Color res={{0.0f, 0.0f, 0.0f, 0.0f}}, rcolor;
+  RT_Color res={{0.0f, 0.0f, 0.0f, 0.0f}}, rcolor, nc;
   RT_Vertex4f onew, rnew, rray, tmpv, norm;
   float dmin, df, rf, n_dot_lo, dm, ts=1.0f, u, v;
   int32_t c, d;
@@ -182,10 +177,17 @@ static RT_Color rtRayTrace(
     rtVectorInverse(norm, norm);
   }
 
+  // bump mapping: http://www.cs.jhu.edu/~cohen/rendtech99/lectures
+  // apply texture
+  rtVectorCopy(nearest->s->color.c, nc.c);
+  if(nearest->sid == 7 && nearest->texture) {
+    rtApplyTexture(nearest, norm, &nc, onew, u, v);
+  }
+
   // initialize result color with ambient color
   if(nearest->s->ka > 0.0f) {
-    rtVectorMul(res.c, nearest->s->color.c, nearest->s->ka * total_flux);
-  }
+    rtVectorMul(res.c, nc.c, nearest->s->ka * total_flux);
+  } 
 
   // rtRayTrace reflected ray
   if(nearest->s->kr > 0.0f) {
@@ -205,14 +207,13 @@ static RT_Color rtRayTrace(
   RT_Color tmp={{0.0f, 0.0f, 0.0f, 0.0f}};
   float a_sum=0.0f, r_sum=0.0f;
 
-  /* Perform simplified shadow test. */
-  if(scene->cfg.epsilon) {  //TODO get switch from file
-    // calculate intensities
-    for(c=0; c<scene->nl; c++) {
-      l = &scene->l[c];
+  /* Process point lights. */
+  for(c=0; c<scene->nl; c++) {
+    l = &scene->l[c];
+    df = rf = 0.0f;
+    rtVectorRay(rnew, onew, l->p);
 
-      df = rf = 0.0f;
-      rtVectorRay(rnew, onew, l->p);
+    if(!rtUddFindShadow(udd, scene, nearest, onew, l, c, &ts)) {
       n_dot_lo = rtVectorDotp(norm, rnew);
 
       // diffusion factor
@@ -228,73 +229,47 @@ static RT_Color rtRayTrace(
           rf = -rf;
         }
       }
-
-      // calculate luminance and add to buffer
-      scene->lbuf[c] = l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->cfg.distmod);
-    }
-
-    // sort luminance buffer in descending order
-    qsort(scene->lbuf, scene->nl, sizeof(float), lbuf_cmp);
-    
-    // calculate maximal available luminance
-    for(c=0; c<scene->nl; c++) {
-      r_sum += scene->lbuf[c];
-    }
-
-    if(r_sum < 0.0f) {
-      a_sum = -0.000001f;
-    } else {
-      a_sum = 0.000001f;
-    }
-
-    // process lights
-    for(c=0; c<scene->nl; c++) {
-      l = &scene->l[c];
-
-      if(r_sum/a_sum < scene->cfg.epsilon)  //TODO: get param from file
-        break;
-
-      if(!rtUddFindShadow(udd, scene, nearest, onew, l, c, &ts)) {
-        a_sum += scene->lbuf[c];
-        scene->lc[c] += 1.0f;
-        // calculate color
-        rtVectorAdd(tmp.c, l->color.c, nearest->s->color.c);
-        rtVectorMul(tmp.c, tmp.c, ts*scene->lbuf[c]);
-        rtVectorAdd(res.c, res.c, tmp.c);
-      }
       
-      scene->tc[c] += 1.0f;
-      r_sum -= scene->lbuf[c];
-    }
-
-    // proces other lights in simplified way
-    for(; c<scene->nl; c++) {
-      l = &scene->l[c];
-      rtVectorAdd(tmp.c, l->color.c, nearest->s->color.c);
-      rtVectorMul(tmp.c, tmp.c, scene->lbuf[c]*scene->lc[c]/scene->tc[c]);
+      // calculate color
+      rtVectorAdd(tmp.c, l->color.c, nc.c);
+      rtVectorMul(tmp.c, tmp.c, ts*l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->cfg.distmod));
       rtVectorAdd(res.c, res.c, tmp.c);
     }
+  }
 
-  /* Perform normal shadow test. */
-  } else {
-    /* Process point lights. */
-    for(c=0; c<scene->nl; c++) {
-      l = &scene->l[c];
+  /* Process planar lights. */
+  for(c=0; c<scene->npl; c++) {
+    int32_t nsamples=16;
+    RT_Color sum={{0.0f, 0.0f, 0.0f, 0.0f}};
+
+    for(d=0; d<nsamples; d++) {  // how many samples to take
+      RT_PlanarLight *pl = &scene->pl[c];
+      RT_Vertex4f ab, ac;
+      float dotp;
+
+      float eta = rand() / (float)RAND_MAX;
+      float psi = rand() / (float)RAND_MAX;
+
+      RT_Light chosen;
+      chosen.flux = pl->flux / nsamples;
+      rtVectorCopy(pl->color.c, chosen.color.c);
+      rtVectorCopy(pl->a, chosen.p);
+
+      rtVectorMul(ab, pl->ab, eta);
+      rtVectorMul(ac, pl->ac, psi);
+      rtVectorAdd(chosen.p, chosen.p, ab);
+      rtVectorAdd(chosen.p, chosen.p, ac);
+
       df = rf = 0.0f;
-      rtVectorRay(rnew, onew, l->p);
-
-      if(!rtUddFindShadow(udd, scene, nearest, onew, l, c, &ts)) {
-        // bump mapping: http://www.cs.jhu.edu/~cohen/rendtech99/lectures
-        // apply texture
-        RT_Color nearest_c;
-        if(nearest->sid == 7 && nearest->texture) {
-          rtApplyTexture(nearest, norm, &nearest_c, onew, u, v);
-        } else {
-          rtVectorCopy(nearest->s->color.c, nearest_c.c);
-        }
-
+      rtVectorRay(rnew, onew, chosen.p);
+      if((dotp=rtVectorDotp(rnew, pl->n)) <= 0) {
+        //break;
+      }
+      
+      //printf("%.3f\n", dotp);
+      if(!rtUddFindShadow(udd, scene, nearest, onew, &chosen, -1, &ts)) {
         n_dot_lo = rtVectorDotp(norm, rnew);
-
+        
         // diffusion factor
         df = nearest->s->kd * n_dot_lo;
         if(df < 0.0f && nearest->s->kt > 0.0f) {
@@ -308,71 +283,15 @@ static RT_Color rtRayTrace(
             rf = -rf;
           }
         }
-        
+
         // calculate color
-        rtVectorAdd(tmp.c, l->color.c, nearest_c.c);
-        rtVectorMul(tmp.c, tmp.c, ts*l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->cfg.distmod));
-        rtVectorAdd(res.c, res.c, tmp.c);
+        rtVectorAdd(sum.c, chosen.color.c, nc.c);
+        rtVectorMul(sum.c, sum.c, /*pow(dotp, 0.7f)**/ts*chosen.flux*(df+rf)/(rtVectorDistance(onew, chosen.p)+scene->cfg.distmod));
       }
-    }
-
-    /* Process planar lights. */
-    for(c=0; c<scene->npl; c++) {
-      continue;
-      int32_t nsamples=16;
-      RT_Color sum={{0.0f, 0.0f, 0.0f, 0.0f}};
-
-      for(d=0; d<nsamples; d++) {  // how many samples to take
-        RT_PlanarLight *pl = &scene->pl[c];
-        RT_Vertex4f ab, ac;
-        float dotp;
-
-        float eta = rand() / (float)RAND_MAX;
-        float psi = rand() / (float)RAND_MAX;
-
-        RT_Light chosen;
-        chosen.flux = pl->flux / nsamples;
-        rtVectorCopy(pl->color.c, chosen.color.c);
-        rtVectorCopy(pl->a, chosen.p);
-
-        rtVectorMul(ab, pl->ab, eta);
-        rtVectorMul(ac, pl->ac, psi);
-        rtVectorAdd(chosen.p, chosen.p, ab);
-        rtVectorAdd(chosen.p, chosen.p, ac);
-
-        df = rf = 0.0f;
-        rtVectorRay(rnew, onew, chosen.p);
-        if((dotp=rtVectorDotp(rnew, pl->n)) <= 0) {
-          //break;
-        }
-        
-        //printf("%.3f\n", dotp);
-        if(!rtUddFindShadow(udd, scene, nearest, onew, &chosen, -1, &ts)) {
-          n_dot_lo = rtVectorDotp(norm, rnew);
-          
-          // diffusion factor
-          df = nearest->s->kd * n_dot_lo;
-          if(df < 0.0f && nearest->s->kt > 0.0f) {
-            df = -df;
-          }
-
-          // reflection factor
-          if(nearest->s->ks > 0.0f) {
-            rf = nearest->s->ks * pow(rtVectorDotp(r, rtVectorRayReflected2(tmpv, norm, rnew, n_dot_lo)), nearest->s->g);
-            if(rf < 0.0f && nearest->s->kt > 0.0f) {
-              rf = -rf;
-            }
-          }
-
-          // calculate color
-          rtVectorAdd(sum.c, chosen.color.c, nearest->s->color.c);
-          rtVectorMul(sum.c, sum.c, /*pow(dotp, 0.7f)**/ts*chosen.flux*(df+rf)/(rtVectorDistance(onew, chosen.p)+scene->cfg.distmod));
-        }
-        
-        rtVectorMul(sum.c, sum.c, 1.0f/nsamples);
-        rtVectorAdd(tmp.c, tmp.c, sum.c);
-        rtVectorAdd(res.c, res.c, tmp.c);
-      }
+      
+      rtVectorMul(sum.c, sum.c, 1.0f/nsamples);
+      rtVectorAdd(tmp.c, tmp.c, sum.c);
+      rtVectorAdd(res.c, res.c, tmp.c);
     }
   }
 

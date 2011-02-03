@@ -41,6 +41,7 @@ RT_Scene* rtScenePreprocess(RT_Scene *scene, RT_Camera *camera) {
   t = scene->t;
   int id=0;
   while(t < maxt) {
+    t->texture = NULL;
     if(t->sid == 7) {
       switch(id) {
         case 0:
