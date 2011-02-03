@@ -1,12 +1,16 @@
 #include <float.h>
+#include <math.h>
 #include <errno.h>
 #include <stdlib.h>
 #include "error.h"
 #include "voxelize.h"
 #include "raytrace.h"
+#include "texture.h"
 #include "vectormath.h"
 #include "rdtsc.h"
 #include "common.h"
+
+
 
 
 static inline int lbuf_cmp(const void *a_, const void *b_) {
@@ -18,6 +22,114 @@ static inline int lbuf_cmp(const void *a_, const void *b_) {
   } else {
     return -1;
   }
+}
+
+
+/* Get color by bluring pixels lying on the same plane. */
+static RT_Color rtVisualizedSceneGetBluredPixel(RT_VisualizedScene* s, int x, int y) {
+  const int radius = 2;  // neighbourhood radius
+  const float delta = 0.00001f;
+  int i, j, t;
+  float tmp;
+  int miny=y-radius, maxy=y+radius;
+  int minx=x-radius, maxx=x+radius;
+  RT_Color r = {{0.0f, 0.0f, 0.0f, 0.0f}};
+  
+  RT_VisualizedScenePixel *ref = rtVisualizedSceneGetPixel(s, x, y);  // reference pixel
+  return ref->c;
+  if(!ref->t) {
+    return r;
+  }
+
+  for(j=miny, t=0; j<=maxy; j++) {
+    for(i=minx; i<=maxx; i++) {
+      if(i < 0 || j < 0)
+        continue;
+      if(i >= s->width || j >= s->height)
+        continue;
+      RT_VisualizedScenePixel *p = rtVisualizedSceneGetPixel(s, i, j);
+      if(!p->t) 
+        continue;
+      
+      // check if this pixel lies in the same plane as reference pixel
+      tmp = p->t->d - ref->t->d;
+      if(tmp < -delta || tmp > delta)
+        continue;
+      tmp = p->t->n[0] - ref->t->n[0];
+      if(tmp < -delta || tmp > delta)
+        continue;
+      tmp = p->t->n[1] - ref->t->n[1];
+      if(tmp < -delta || tmp > delta)
+        continue;
+      tmp = p->t->n[2] - ref->t->n[2];
+      if(tmp < -delta || tmp > delta)
+        continue;
+
+      t++;
+      rtVectorAdd(r.c, r.c, p->c.c);
+    }
+  }
+
+  rtVectorMul(r.c, r.c, 1.0f/t);
+
+  return r;
+}
+
+
+/* Apply texture. */
+static rtApplyTexture(RT_Triangle* nearest, RT_Vertex4f norm, RT_Color* out, float *o, float u, float v) {
+  float px = nearest->ti[0] + (nearest->tj[0]-nearest->ti[0])*u + (nearest->tk[0]-nearest->ti[0])*v;
+  float py = nearest->ti[1] + (nearest->tj[1]-nearest->ti[1])*u + (nearest->tk[1]-nearest->ti[1])*v;
+  //printf("%f %f\n", px*u, py*v);
+  
+  float bheight = 0.04f, bwidth = 0.10f, filling = 0.005f, radius = 0.005f;    
+
+  float vectormod[2];
+  vectormod[0] = 0;
+  vectormod[1] = 0;
+  
+  RT_Color c = bricks(px, py, bheight, bwidth, filling, 20, 0, 0, 33, vectormod, radius);
+    
+  out->c[0] = c.c[0];
+  out->c[1] = c.c[1];
+  out->c[2] = c.c[2];             
+  
+  //RT_INFO("%f %f", vectormod[0], vectormod[1]);
+  
+  /*norm[0] = norm[0] + vectormod[0];
+  norm[1] = norm[1] + vectormod[1];
+  rtVectorNorm(norm);*/
+  
+
+  // get color from texture
+/*  unsigned long c = rtBitmapGetPixel(
+    nearest->texture, 
+    px*(nearest->texture->width-1), 
+    py*(nearest->texture->height-1));*/
+/*  out->c[0] = rtColorGetR(c) / 255.0f;
+  out->c[1] = rtColorGetG(c) / 255.0f;
+  out->c[2] = rtColorGetB(c) / 255.0f;*/
+  
+
+/*  float factor = (out->c[0] + out->c[1] + out->c[2]) * 0.3333f;
+  norm[0] -= factor;
+  norm[1] -= factor;
+  norm[2] -= factor;
+  rtVectorNorm(norm);*/
+  /*static int row = 0;
+  double dabs(double x) {
+    return x<0.0f? -x: x;
+  }
+  if(dabs(sin(u/v)) < 0.1f) {
+    out->c[0] = 1.0f;
+    out->c[1] = 0.0f;
+    out->c[2] = 0.0f;
+    row = !row;
+  } else {
+    out->c[0] = 0.8f;
+    out->c[1] = 0.8f;
+    out->c[2] = 0.8f;
+  }*/
 }
 
 
@@ -40,12 +152,13 @@ static RT_Color rtRayTrace(
     RT_Light *l, RT_Light *maxl,
     float *o, float *r, 
     float total_flux, uint32_t level,
-    int32_t i, int32_t j, int32_t k) 
+    int32_t i, int32_t j, int32_t k,
+    RT_Triangle **visible) 
 {
   RT_Color res={{0.0f, 0.0f, 0.0f, 0.0f}}, rcolor;
   RT_Vertex4f onew, rnew, rray, tmpv, norm;
-  float dmin, df, rf, n_dot_lo, dm, ts=1.0f;
-  int32_t c;
+  float dmin, df, rf, n_dot_lo, dm, ts=1.0f, u, v;
+  int32_t c, d;
 
   /* Terminate if we reached limit of recurrency level. */
   if(level == 0) {
@@ -54,11 +167,15 @@ static RT_Color rtRayTrace(
   
   /* Traverse through grid of voxels to find nearest triangle for further
    * shading processing. */
-  RT_Triangle *nearest = rtUddFindNearestTriangle(udd, scene, current, onew, &dmin, o, r, &i, &j, &k);
+  RT_Triangle *nearest = rtUddFindNearestTriangle(udd, scene, current, onew, &dmin, o, r, &i, &j, &k, &u, &v);
   if(!nearest) {
     return res;
   }
   
+  if(!*visible) {
+    *visible = nearest;
+  }
+
   // point normal towards current observer
   rtVectorCopy(nearest->n, norm);
   if(rtVectorDotp(r, norm) > 0.0f) {
@@ -73,14 +190,14 @@ static RT_Color rtRayTrace(
   // rtRayTrace reflected ray
   if(nearest->s->kr > 0.0f) {
     rtVectorRayReflected(rray, norm, rtVectorInverse(tmpv, r));
-    rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k);
+    rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k, visible);
     rtVectorAdd(res.c, res.c, rtVectorMul(rcolor.c, rcolor.c, nearest->s->kr));
   }
 
   // rtRayTrace refracted ray
   if(nearest->s->kt > 0.0f) {
     rtVectorRayRefracted(rray, norm, rtVectorInverse(tmpv, r), nearest->s->eta);
-    rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k);
+    rcolor = rtRayTrace(scene, udd, t, maxt, nearest, l, maxl, onew, rray, total_flux, level-1, i, j, k, visible);
     rtVectorAdd(res.c, res.c, rtVectorMul(rcolor.c, rcolor.c, nearest->s->kt));
   }
   
@@ -160,13 +277,22 @@ static RT_Color rtRayTrace(
 
   /* Perform normal shadow test. */
   } else {
-    a_sum = 0.0f;
+    /* Process point lights. */
     for(c=0; c<scene->nl; c++) {
       l = &scene->l[c];
       df = rf = 0.0f;
       rtVectorRay(rnew, onew, l->p);
 
       if(!rtUddFindShadow(udd, scene, nearest, onew, l, c, &ts)) {
+        // bump mapping: http://www.cs.jhu.edu/~cohen/rendtech99/lectures
+        // apply texture
+        RT_Color nearest_c;
+        if(nearest->sid == 7 && nearest->texture) {
+          rtApplyTexture(nearest, norm, &nearest_c, onew, u, v);
+        } else {
+          rtVectorCopy(nearest->s->color.c, nearest_c.c);
+        }
+
         n_dot_lo = rtVectorDotp(norm, rnew);
 
         // diffusion factor
@@ -182,10 +308,69 @@ static RT_Color rtRayTrace(
             rf = -rf;
           }
         }
-
+        
         // calculate color
-        rtVectorAdd(tmp.c, l->color.c, nearest->s->color.c);
+        rtVectorAdd(tmp.c, l->color.c, nearest_c.c);
         rtVectorMul(tmp.c, tmp.c, ts*l->flux*(df+rf)/(rtVectorDistance(onew, l->p)+scene->cfg.distmod));
+        rtVectorAdd(res.c, res.c, tmp.c);
+      }
+    }
+
+    /* Process planar lights. */
+    for(c=0; c<scene->npl; c++) {
+      continue;
+      int32_t nsamples=16;
+      RT_Color sum={{0.0f, 0.0f, 0.0f, 0.0f}};
+
+      for(d=0; d<nsamples; d++) {  // how many samples to take
+        RT_PlanarLight *pl = &scene->pl[c];
+        RT_Vertex4f ab, ac;
+        float dotp;
+
+        float eta = rand() / (float)RAND_MAX;
+        float psi = rand() / (float)RAND_MAX;
+
+        RT_Light chosen;
+        chosen.flux = pl->flux / nsamples;
+        rtVectorCopy(pl->color.c, chosen.color.c);
+        rtVectorCopy(pl->a, chosen.p);
+
+        rtVectorMul(ab, pl->ab, eta);
+        rtVectorMul(ac, pl->ac, psi);
+        rtVectorAdd(chosen.p, chosen.p, ab);
+        rtVectorAdd(chosen.p, chosen.p, ac);
+
+        df = rf = 0.0f;
+        rtVectorRay(rnew, onew, chosen.p);
+        if((dotp=rtVectorDotp(rnew, pl->n)) <= 0) {
+          //break;
+        }
+        
+        //printf("%.3f\n", dotp);
+        if(!rtUddFindShadow(udd, scene, nearest, onew, &chosen, -1, &ts)) {
+          n_dot_lo = rtVectorDotp(norm, rnew);
+          
+          // diffusion factor
+          df = nearest->s->kd * n_dot_lo;
+          if(df < 0.0f && nearest->s->kt > 0.0f) {
+            df = -df;
+          }
+
+          // reflection factor
+          if(nearest->s->ks > 0.0f) {
+            rf = nearest->s->ks * pow(rtVectorDotp(r, rtVectorRayReflected2(tmpv, norm, rnew, n_dot_lo)), nearest->s->g);
+            if(rf < 0.0f && nearest->s->kt > 0.0f) {
+              rf = -rf;
+            }
+          }
+
+          // calculate color
+          rtVectorAdd(sum.c, chosen.color.c, nearest->s->color.c);
+          rtVectorMul(sum.c, sum.c, /*pow(dotp, 0.7f)**/ts*chosen.flux*(df+rf)/(rtVectorDistance(onew, chosen.p)+scene->cfg.distmod));
+        }
+        
+        rtVectorMul(sum.c, sum.c, 1.0f/nsamples);
+        rtVectorAdd(tmp.c, tmp.c, sum.c);
         rtVectorAdd(res.c, res.c, tmp.c);
       }
     }
@@ -214,7 +399,9 @@ RT_VisualizedScene* rtVisualizedSceneRaytrace(RT_Scene *scene, RT_Camera *camera
       res->min.c[k] = FLT_MAX;
       res->max.c[k] = FLT_MIN;
     }
-    res->map = malloc(camera->sw*camera->sh*sizeof(RT_Color));
+
+    // allocate memory for raytraced raw color buffer
+    res->map = malloc(camera->sw*camera->sh*sizeof(RT_VisualizedScenePixel));
     if(!res->map) {
       rtVisualizedSceneDestroy(&res);
       errno = E_MEMORY;
@@ -276,12 +463,14 @@ RT_VisualizedScene* rtVisualizedSceneRaytrace(RT_Scene *scene, RT_Camera *camera
         continue;
 
       // trace current ray and calculate color of current pixel.
+      RT_Triangle *visible = NULL;  // holds triangle intersected by primary ray
       color = rtRayTrace(
         scene, udd,
         scene->t, (RT_Triangle*)(scene->t+scene->nt), NULL,
         scene->l, (RT_Light*)(scene->l+scene->nl),
         camera->ob, ray, res->total_flux, 5,
-        i, j, k
+        i, j, k,
+        &visible
       );
       
       // update minimal and maximal color
@@ -291,12 +480,12 @@ RT_VisualizedScene* rtVisualizedSceneRaytrace(RT_Scene *scene, RT_Camera *camera
       }
 
       // save pixel color (not normalized)
-      rtVisualizedSceneSetPixel(res, x, y, &color);
+      rtVisualizedSceneSetPixel(res, x, y, &color, visible);
     }
   }
   
-  RT_INFO("minimal color (not normalized): R=%.3f, G=%.3f, B=%.3f", res->min.c[0], res->min.c[1], res->min.c[2])
-  RT_INFO("maximal color (not normalized): R=%.3f, G=%.3f, B=%.3f", res->max.c[0], res->max.c[1], res->max.c[2])
+  RT_INFO("minimal color (not normalized): R=%.3f, G=%.3f, B=%.3f", res->min.c[0], res->min.c[1], res->min.c[2]);
+  RT_INFO("maximal color (not normalized): R=%.3f, G=%.3f, B=%.3f", res->max.c[0], res->max.c[1], res->max.c[2]);
 
   // release memory occupied by domain division structures
   rtUddDestroy(&udd);
@@ -318,10 +507,8 @@ RT_Bitmap* rtVisualizedSceneToBitmap(RT_VisualizedScene *s, int flags, void* par
   if(!res)
     return NULL;
 
-  int k;
+  int k, x, y;
   float delta[3];
-  uint32_t *p=res->pixels, *maxp=(res->pixels + s->width*s->height);
-  RT_Color *m=s->map;
 
   // calculate differences between minimal and maximal colors
   for(k=0; k<3; k++) {
@@ -342,15 +529,23 @@ RT_Bitmap* rtVisualizedSceneToBitmap(RT_VisualizedScene *s, int flags, void* par
 
     // iterate through each pixel of image and calculate color by scaling to
     // 0..255 range
-    while(p < maxp) {
-      float r=0.0f, g=0.0f, b=0.0f;
-      for(k=0; k<total_gammas; k++) {
-        r += pow((m->c[0] - s->min.c[0]) * delta[0], gammas[k]) * 255.0f;
-        g += pow((m->c[1] - s->min.c[1]) * delta[1], gammas[k]) * 255.0f;
-        b += pow((m->c[2] - s->min.c[2]) * delta[2], gammas[k]) * 255.0f;
+    for(y=0; y<s->height; y++) {
+      for(x=0; x<s->width; x++) {
+        RT_Color m = rtVisualizedSceneGetBluredPixel(s, x, y);
+
+        float r=0.0f, g=0.0f, b=0.0f;
+        for(k=0; k<total_gammas; k++) {
+          r += pow((m.c[0] - s->min.c[0]) * delta[0], gammas[k]) * 255.0f;
+          g += pow((m.c[1] - s->min.c[1]) * delta[1], gammas[k]) * 255.0f;
+          b += pow((m.c[2] - s->min.c[2]) * delta[2], gammas[k]) * 255.0f;
+        }
+
+        rtBitmapSetPixel(
+          res, x, y, rtColorBuildRGBA(
+            r/(float)total_gammas,
+            g/(float)total_gammas, 
+            b/(float)total_gammas, 0));
       }
-      *p = rtColorBuildRGBA(r/(float)total_gammas, g/(float)total_gammas, b/(float)total_gammas, 0);
-      p++; m++;
     }
   }
 

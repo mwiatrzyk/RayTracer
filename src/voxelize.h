@@ -95,7 +95,8 @@ RT_Triangle* rtUddFindNearestTriangle(
   float *ipoint,
   float *dmin,
   float *o, float *r,
-  int32_t *i, int32_t *j, int32_t *k
+  int32_t *i, int32_t *j, int32_t *k,
+  float *u, float *v
 );
 
 /* Returns first found triangle that is intersected by ray that starts at

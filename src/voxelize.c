@@ -539,11 +539,13 @@ RT_Triangle* rtUddFindNearestTriangle(
   float *ipoint,
   float *dmin,
   float *o, float *r, 
-  int32_t *i_, int32_t *j_, int32_t *k_)
+  int32_t *i_, int32_t *j_, int32_t *k_,
+  float *u, float *v)
 {
   float dtx, dty, dtz, tx, ty, tz;
   float tx_n, ty_n, tz_n;
   float d;
+  float utmp, vtmp;
   int32_t di, dj, dk;
   int32_t i=*i_, j=*j_, k=*k_;
   int32_t c, nidx=0;
@@ -568,11 +570,13 @@ RT_Triangle* rtUddFindNearestTriangle(
       nearest = NULL;
       for(c=0; c<voxel->nt; c++) {
         t = voxel->t[c]; 
-        if(t->isint(t, o, r, &d, dmin)) {
+        if(t->isint(t, o, r, &d, dmin, &utmp, &vtmp)) {
           if(t != current && d < *dmin) {
             *dmin = d;
             nearest = t;
             nidx = c;
+            *u = utmp;
+            *v = vtmp;
           }
         }
       }
@@ -615,7 +619,7 @@ RT_Triangle* rtUddFindShadow(
 {
   int32_t aidx[3], bidx[3];
   int32_t min[3], max[3];
-  float tx, dtx, ty, dty, tz, dtz;
+  float tx, dtx, ty, dty, tz, dtz, u, v;
   float tx_n, ty_n, tz_n;
   float *b = l->p;
   int32_t di, dj, dk;
@@ -638,14 +642,16 @@ RT_Triangle* rtUddFindShadow(
       return current;
     }
   }
-
+  
   // check if ray intersects cached object
-  RT_Triangle *cache = current->shadow_cache[lindex];
-  if(cache != NULL) {
-    if(cache->isint(cache, a, r, &d, &dmin)) {
-      return cache;
+  if(lindex >= 0) {
+    RT_Triangle *cache = current->shadow_cache[lindex];
+    if(cache != NULL) {
+      if(cache->isint(cache, a, r, &d, &dmin, &u, &v)) {
+        return cache;
+      }
+      current->shadow_cache[lindex] = NULL;
     }
-    current->shadow_cache[lindex] = NULL;
   }
 
   // calculate distance between points
@@ -692,14 +698,16 @@ RT_Triangle* rtUddFindShadow(
     if(voxel->nt > 0) {
       for(c=0; c<voxel->nt; c++) {
         t = voxel->t[c];
-        if(t->isint(t, a, r, &d, &dmin)) {
+        if(t->isint(t, a, r, &d, &dmin, &u, &v)) {
           if(t != current) {
             if(t->s->kt > 0.0f) {  // found transparent or semi-transparent triangle
               *ts *= t->s->kt;
               continue;
             }
             if(d > 0.00001f && d < dmax) {
-              current->shadow_cache[lindex] = t;
+              if(lindex >= 0) {
+                current->shadow_cache[lindex] = t;
+              }
               return t;
             }
           }

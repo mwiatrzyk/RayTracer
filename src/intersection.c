@@ -55,9 +55,9 @@ static int rtInt1CanProject(RT_Triangle *t, int xi, int yi) {
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
+int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin, float *u, float *v) {
   RT_Vertex4f pvec, tvec, qvec;
-  float det, inv_det, u, v;
+  float det, inv_det;
 
   rtVectorCrossp(pvec, r, t->ik);
   det = rtVectorDotp(t->ij, pvec);
@@ -67,14 +67,14 @@ int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
 
   inv_det = 1.0f / det;
   rtVectorMake(tvec, t->i, o);
-  u = rtVectorDotp(tvec, pvec) * inv_det;
-  if(u < 0.0f || u > 1.0f) {
+  *u = rtVectorDotp(tvec, pvec) * inv_det;
+  if(*u < 0.0f || *u > 1.0f) {
     return 0;
   }
 
   rtVectorCrossp(qvec, tvec, t->ij);
-  v = rtVectorDotp(r, qvec) * inv_det;
-  if(v < 0.0f || u + v > 1.0f) {
+  *v = rtVectorDotp(r, qvec) * inv_det;
+  if(*v < 0.0f || *u + *v > 1.0f) {
     return 0;
   }
 
@@ -85,7 +85,7 @@ int rtInt0Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
   return 1;
 }
 ///////////////////////////////////////////////////////////////
-int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin) {
+int rtInt1Test(RT_Triangle *t, float *o, float *r, float *d, float *dmin, float *u, float *v) {
   float rdn = rtVectorDotp(r, t->n);
   if(rdn == 0.0f)
     return 0;

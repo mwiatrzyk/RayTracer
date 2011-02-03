@@ -20,21 +20,33 @@
 
 //// STRUCTURES ///////////////////////////////////////////////
 
+typedef struct _RT_VisualizedScenePixel {
+  RT_Color c;
+  RT_Triangle *t;
+} RT_VisualizedScenePixel;
+
 typedef struct _RT_VisualizedScene {
   int32_t width;
   int32_t height;
   float total_flux;
   float gamma;
   RT_Color min, max;
-  RT_Color *map;
+  RT_VisualizedScenePixel *map;
 } RT_VisualizedScene;
 
 
 //// INLINE FUNCTIONS /////////////////////////////////////////
 
 /* Sets not normalized pixel at given coords. */
-static inline void rtVisualizedSceneSetPixel(RT_VisualizedScene *s, int32_t x, int32_t y, RT_Color *c) {
-  *(s->map + (y*s->width) + x) = *c;
+static inline void rtVisualizedSceneSetPixel(RT_VisualizedScene *s, int32_t x, int32_t y, RT_Color *c, RT_Triangle *t) {
+  RT_VisualizedScenePixel *ptr = s->map + (y*s->width) + x;
+  ptr->c = *c;
+  ptr->t = t;
+}
+
+/* Gets pixel. */
+static inline RT_VisualizedScenePixel* rtVisualizedSceneGetPixel(RT_VisualizedScene *s, int32_t x, int32_t y) {
+  return s->map + (y*s->width) + x;
 }
 
 

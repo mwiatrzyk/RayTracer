@@ -48,7 +48,7 @@ RT_Scene* rtSceneLoad(const char *filename) {
     errno = E_IO;
     goto cleanup;
   }
-
+  
   while((line=rtReadline(fd)) != NULL) {
     /*---------------------------
       vertices reading startup
@@ -126,6 +126,12 @@ RT_Scene* rtSceneLoad(const char *filename) {
       rtVectorCopy(v[_i], res->t[i].i);
       rtVectorCopy(v[j], res->t[i].j);
       rtVectorCopy(v[k], res->t[i].k);
+      res->t[i].ti[0] = 0.0f;
+      res->t[i].ti[1] = 0.0f;
+      res->t[i].tj[0] = 1.0f;
+      res->t[i].tj[1] = 0.0f;
+      res->t[i].tk[0] = 0.0f;
+      res->t[i].tk[1] = 1.0f;
       
       RT_Vertex4f tmp;
       RT_Triangle *t = &res->t[i];
@@ -267,6 +273,8 @@ RT_Scene* rtSceneConfigureRenderer(RT_Scene* self, const char *filename) {
       pch = strtok(NULL, " \t");
     }
   }
+
+  return self;
 }
 
 
@@ -332,6 +340,13 @@ RT_Scene* rtSceneSetLights(RT_Scene* self, RT_Light* l, uint32_t nl) {
     }
     memset(self->t[k].shadow_cache, 0, nl*sizeof(RT_Triangle*));
   }
+  return self;
+}
+
+///////////////////////////////////////////////////////////////
+RT_Scene* rtSceneSetPlanarLights(RT_Scene* self, RT_PlanarLight* pl, uint32_t npl) {
+  self->pl = pl;
+  self->npl = npl;
   return self;
 }
 
@@ -413,6 +428,84 @@ cleanup:
   return res;
 }
 
+///////////////////////////////////////////////////////////////
+RT_PlanarLight* rtPlanarLightLoad(const char *filename, uint32_t *n) {
+  FILE *fd=NULL;
+  char *line=NULL;
+  int32_t i=0, tmp, lcount=-1;
+  RT_PlanarLight *res=NULL;
+
+  fd = fopen(filename, "r");
+  if(!fd) {
+    errno = E_IO;
+    goto cleanup;
+  }
+  
+  while((line=rtReadline(fd)) != NULL) {
+    /*----------------------
+      read number of lights 
+     -----------------------*/
+    if (lcount == -1) {
+      sscanf(line, "%d", &lcount);
+      
+      // allocate memory for array of planar lights
+      *n = lcount;
+      res = malloc(lcount*sizeof(RT_PlanarLight));
+      if (!res) {
+        errno = E_MEMORY;
+        res = NULL;
+        goto cleanup;
+      }
+      memset(res, 0, lcount*sizeof(RT_PlanarLight));
+      
+      // initialize variables
+      i = 0;
+
+    /*------------------
+      read single light 
+     -------------------*/
+    } else {
+      tmp = i / 4;
+      switch(i % 4) {
+        // flux, R, G, B
+        case 0:
+          sscanf(line, "%f %f %f %f", 
+            &res[tmp].flux, 
+            &res[tmp].color.c[0], 
+            &res[tmp].color.c[1],
+            &res[tmp].color.c[2]);
+          break;
+        // origin point
+        case 1:
+          sscanf(line, "%f %f %f", &res[tmp].a[0], &res[tmp].a[1], &res[tmp].a[2]);
+          break;
+        // "top" point
+        case 2:
+          sscanf(line, "%f %f %f", &res[tmp].b[0], &res[tmp].b[1], &res[tmp].b[2]);
+          break;
+        // "right" point
+        case 3:
+          sscanf(line, "%f %f %f", &res[tmp].c[0], &res[tmp].c[1], &res[tmp].c[2]);
+          break;
+      }
+      i++;
+    }
+  }
+  
+  // calculate other parameters of surface light (such as f.e. normal vector)
+  for(i=0; i<lcount; i++) {
+    rtVectorMake(res[i].ab, res[i].a, res[i].b);
+    rtVectorMake(res[i].ac, res[i].a, res[i].c);
+    rtVectorCrossp(res[i].n, res[i].ab, res[i].ac);
+    rtVectorNorm(res[i].n);
+  }
+
+cleanup:
+  if(fd)
+    fclose(fd);
+
+  return res;
+}
 
 ///////////////////////////////////////////////////////////////
 RT_Surface* rtSurfaceLoad(const char *filename, uint32_t *n) {

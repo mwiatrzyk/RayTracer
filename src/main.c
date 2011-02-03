@@ -22,6 +22,7 @@ void print_help(const char *executable) {
       "    -l PATH     use light file PATH\n"
       "    -a PATH     use attribute file PATH\n"
       "    -c PATH     use camera file PATH\n"
+      "    -C PATH     use renderer config file PATH\n"
       "    -s PATH     use PATH as prefix that will be appended with file extensions.\n"
       "                This argument allows to pass all files (*.brs, *.atr, *.cam, *.lgt)\n"
       "                at once (-g, -l, -a, -c can be used to override some of them)\n"
@@ -35,7 +36,7 @@ void print_help(const char *executable) {
 int parse_args(
     int argc, char* argv[], 
     char **g, char **l, char **a, char **c,
-    char **s, char **o, float *gamma, float *epsilon, float *distmod, char **C) {
+    char **s, char **o, float *gamma, float *epsilon, float *distmod, char **C, char **L) {
 
   int i=1, alen;
   char *tmp, **dst=NULL;
@@ -50,6 +51,8 @@ int parse_args(
         dst = g;
       } else if(rtStringStartsWith(tmp, "-l")) {
         dst = l;
+      } else if(rtStringStartsWith(tmp, "-L")) {
+        dst = L;
       } else if(rtStringStartsWith(tmp, "-a")) {
         dst = a;
       } else if(rtStringStartsWith(tmp, "-c")) {
@@ -93,8 +96,8 @@ int parse_args(
       i++;
     }
   }
-  if((!*s && (!*g || !*l || !*a || !*c)) || !*o) {
-    printf("E: some of required arguments are missing\n");
+  if((!*s && (!*g || (!*l && !*L) || !*a || !*c)) || !*o) {
+    RT_EERROR("some of required options are missing")
     return 0;
   }
   return 1;
@@ -103,12 +106,12 @@ int parse_args(
 
 /* Bootstrap function */
 int main(int argc, char* argv[]) {
-  char *g=NULL, *l=NULL, *a=NULL, *c=NULL, *s=NULL, *o=NULL, *C=NULL;
+  char *g=NULL, *l=NULL, *a=NULL, *c=NULL, *s=NULL, *o=NULL, *C=NULL, *L=NULL;
   float gamma=2.5f, epsilon=0.0f, distmod=2.0f;
   uint32_t n;
 
   // parse command line arguments
-  if(!parse_args(argc, argv, &g, &l, &a, &c, &s, &o, &gamma, &epsilon, &distmod, &C)) {
+  if(!parse_args(argc, argv, &g, &l, &a, &c, &s, &o, &gamma, &epsilon, &distmod, &C, &L)) {
     goto garbage_collect;
   }
   if(errno>0) {
@@ -117,11 +120,14 @@ int main(int argc, char* argv[]) {
   }
 
   // prepare data
-  if(!g) g = rtStringConcat(s, ".brs");
-  if(!l) l = rtStringConcat(s, ".lgt");
-  if(!a) a = rtStringConcat(s, ".atr");
-  if(!c) c = rtStringConcat(s, ".cam");
-  if(!C) C = rtStringConcat(s, ".cfg");
+  if(s) {
+    if(!g) g = rtStringConcat(s, ".brs");
+    if(!l) l = rtStringConcat(s, ".lgt");
+    if(!a) a = rtStringConcat(s, ".atr");
+    if(!c) c = rtStringConcat(s, ".cam");
+    if(!C) C = rtStringConcat(s, ".cfg");
+    if(!L) L = rtStringConcat(s, ".pnr");
+  }
 
   // load scene geometry
   RT_INFO("loading scene geometry: %s", g);
@@ -133,23 +139,32 @@ int main(int argc, char* argv[]) {
   scene->cfg.epsilon = epsilon;
   scene->cfg.gamma = gamma;
   scene->cfg.distmod = distmod;
-  if(C) {
-    RT_INFO("loading renderer configuration file: %s", C)
-    rtSceneConfigureRenderer(scene, C);
-    if(errno > 0) {
-      RT_WARN("unable to load renderer configuration file: %s", rtGetErrorDesc())
-      errno = 0;
-    }
+  RT_INFO("loading renderer configuration file: %s", C)
+  rtSceneConfigureRenderer(scene, C);
+  if(errno > 0) {
+    RT_WARN("unable to load renderer configuration file: %s", rtGetErrorDesc())
+    errno = 0;
   }
 
   // load lights and add to scene
   RT_INFO("loading lights: %s", l);
   RT_Light *lgt = rtLightLoad(l, &n);
   if(errno>0) {
-    RT_ERROR("unable to load scene's lights: %s", rtGetErrorDesc());
-    goto garbage_collect;
+    RT_WARN("unable to load scene's lights: %s", rtGetErrorDesc());
+    errno=0;
+  } else {
+    rtSceneSetLights(scene, lgt, n);
   }
-  rtSceneSetLights(scene, lgt, n);
+
+  // load planar lights and add to scene
+  RT_INFO("loading planar lights: %s", L)
+  RT_PlanarLight *pl = rtPlanarLightLoad(L, &n);
+  if(errno>0) {
+    RT_WARN("unable to load planar lights: %s", rtGetErrorDesc());
+    errno = 0;
+  } else {
+    rtSceneSetPlanarLights(scene, pl, n);
+  }
 
   // load surface attributes and add to scene
   RT_INFO("loading surface attributes: %s", a);

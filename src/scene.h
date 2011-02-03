@@ -8,6 +8,7 @@
 //// TYPES ////////////////////////////////////////////////////
 
 typedef float RT_Vertex4f[4];
+typedef float RT_Vertex2f[2];
 
 typedef enum _RT_VoxelizationMode {
   VOX_DEFAULT,           // calculating number of voxels in default way
@@ -38,8 +39,10 @@ typedef struct _RT_Surface {
 /* Definition of single triangle. */
 typedef struct _RT_Triangle {
   RT_Vertex4f i, j, k;          // triangle's vertices
+  RT_Vertex2f ti, tj, tk;       // texture coords
+  RT_Bitmap* texture;           // pinter to texture image
   RT_Surface *s;                // pointer to surface properties of this triangle
-  int (*isint)(struct _RT_Triangle*, float*, float*, float*, float*);  // pointer to intersection test function dedicated for this triangle
+  int (*isint)(struct _RT_Triangle*, float*, float*, float*, float*, float*, float*);  // pointer to intersection test function dedicated for this triangle
   /* helpers */
   int32_t sid;                  // surface index (used only to assign `s` pointer while loading surface description)
   RT_Vertex4f n;                // normal vector
@@ -52,12 +55,22 @@ typedef struct _RT_Triangle {
 } RT_Triangle;
 
 
-/* Definition of single light. */
+/* Definition of single point light. */
 typedef struct _RT_Light {
   RT_Vertex4f p;    // light position
   float flux;       // total flux
   RT_Color color;  // RGB color
 } RT_Light;
+
+
+/* Definition of single planar light. */
+typedef struct _RT_PlanarLight {
+  float flux;       // total flux
+  RT_Color color;   // RGB light color
+  RT_Vertex4f a, b, c;  // coordinates of light
+  RT_Vertex4f ab, ac;  // a->b and a->c vectors
+  RT_Vertex4f n;  // normal vector (direction of planar light)
+} RT_PlanarLight;
 
 
 /* Rendering process configuration. */
@@ -80,12 +93,14 @@ typedef struct _RT_Scene {
   float dmax[3];  // like above, but maximal
   int32_t nt;     // number of triangles in scene
   int32_t nl;     // number of lights
+  int32_t npl;    // number of planar lights
   int32_t ns;     // number of surfaces
   float *lbuf;    // luminance buffer
   float *tc;
   float *lc;
   RT_Triangle *t; // array of triangles
   RT_Light *l;    // array of lights
+  RT_PlanarLight *pl;  // array of planar lights
   RT_Surface *s;  // array of surfaces
 } RT_Scene;
 
@@ -126,6 +141,9 @@ RT_Scene* rtSceneSetSurfaces(RT_Scene* self, RT_Surface* s, uint32_t ns);
 :param: nl: number of items in array of lights */
 RT_Scene* rtSceneSetLights(RT_Scene* self, RT_Light* l, uint32_t nl);
 
+/* Assign planar lights to scene. */
+RT_Scene* rtSceneSetPlanarLights(RT_Scene* self, RT_PlanarLight* l, uint32_t npl);
+
 /* Releases memory occupied by given RT_Scene object.
 
 :param: self: pointer to RT_Scene object */
@@ -137,6 +155,9 @@ void rtSceneDestroy(RT_Scene **self);
 :param: n: pointer to variable that will hold number of returned array's
   items */
 RT_Light* rtLightLoad(const char *filename, uint32_t *n);
+
+/* Loads planar lights from file. */
+RT_PlanarLight* rtPlanarLightLoad(const char *filename, uint32_t *n);
 
 /* Loads surface description from given file and returns array of surfaces.
 
