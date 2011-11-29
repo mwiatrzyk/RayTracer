@@ -3,6 +3,5 @@
 *.swp
 *.vim
 raytrace
-scenes/
 obj/
 
